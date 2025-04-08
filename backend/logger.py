@@ -12,6 +12,14 @@ class CLIPSLogger:
         self.session_id = session_id or datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.setup_loggers()
         
+        # Add direct logging methods to mirror standard logging levels
+        self.debug = self.logger.debug
+        self.info = self.logger.info
+        self.warning = self.logger.warning
+        self.error = self.logger.error
+        self.critical = self.logger.critical
+        self.exception = self.logger.exception
+        
     def setup_loggers(self):
         """Set up different loggers for various types of logs"""
         # Ensure logs directory exists

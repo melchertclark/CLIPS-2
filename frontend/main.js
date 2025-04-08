@@ -9,7 +9,7 @@ let mainWindow;
 
 // Backend process reference
 let backendProcess = null;
-let backendPort = 5000;
+let backendPort = 3000; // Default initial port
 let backendReady = false;
 
 // Debug mode
@@ -37,6 +37,12 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
+  // When window is ready, send the backend port
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log(`Sending backend port ${backendPort} to renderer process`);
+    mainWindow.webContents.send('update-backend-port', backendPort);
+  });
+
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -46,143 +52,164 @@ function createWindow() {
 // Start the Python backend server
 async function startBackend() {
   return new Promise((resolve, reject) => {
+    // Skip starting backend if we're in direct mode (backend started externally)
+    const skipBackendStart = process.argv.includes('--external-backend');
+    if (skipBackendStart) {
+      console.log('Using externally started backend');
+      backendReady = true;
+      return resolve();
+    }
+    
     // Get path to the starter script
     const isPackaged = app.isPackaged;
     let scriptPath;
     
     if (isPackaged) {
       // In packaged app, the Python executable is bundled
-      scriptPath = path.join(process.resourcesPath, 'start_backend.py');
+      scriptPath = path.join(process.resourcesPath, 'backend', 'main.py');
     } else {
       // In development, use the script from the project directory
-      scriptPath = path.join(__dirname, '..', 'start_backend.py');
+      scriptPath = path.join(__dirname, '..', 'backend', 'main.py');
     }
 
     console.log(`Starting backend with ${scriptPath} on port ${backendPort}`);
     
-    // Make the starter script executable
-    try {
-      fs.chmodSync(scriptPath, 0o755);
-    } catch (err) {
-      console.warn(`Failed to make script executable: ${err.message}`);
-    }
-
-    // Try different Python executable names (python3 is common on macOS)
-    const pythonExecutables = ['python3', 'python', 'py', './start_backend.py'];
-    let executableIndex = 0;
+    // Launch the backend process
+    backendProcess = spawn('python3', [scriptPath], {
+      stdio: 'pipe'
+    });
     
-    const tryNextExecutable = () => {
-      if (executableIndex >= pythonExecutables.length) {
-        return reject(new Error('Could not find Python executable. Please ensure Python 3 is installed and in your PATH.'));
+    backendProcess.on('error', (err) => {
+      console.error(`Failed to start backend:`, err);
+      reject(new Error(`Failed to start backend: ${err.message}`));
+    });
+
+    // Handle backend process output
+    backendProcess.stdout.on('data', (data) => {
+      console.log(`Backend stdout: ${data}`);
+
+      // Check if server is running
+      if (data.toString().includes('Running on http://')) {
+        backendReady = true;
+        resolve();
       }
+    });
+
+    backendProcess.stderr.on('data', (data) => {
+      console.error(`Backend stderr: ${data}`);
+    });
+
+    backendProcess.on('close', (code) => {
+      console.log(`Backend process exited with code ${code}`);
+      backendProcess = null;
       
-      const executable = pythonExecutables[executableIndex];
-      console.log(`Trying executable: ${executable}`);
-      
-      // Prepare command arguments based on executable
-      let args = [];
-      if (executable === './start_backend.py') {
-        // Direct execution of the starter script
-        args = [backendPort.toString()];
-        // Launch the backend process with the script directly
-        backendProcess = spawn(executable, args, {
-          stdio: 'pipe',
-          cwd: path.dirname(scriptPath)
-        });
-      } else {
-        // Python interpreter execution
-        args = [scriptPath, backendPort.toString()];
-        // Launch the backend process
-        backendProcess = spawn(executable, args, {
-          stdio: 'pipe'
-        });
+      if (!backendReady) {
+        reject(new Error(`Backend process exited with code ${code}`));
       }
-      
-      backendProcess.on('error', (err) => {
-        console.error(`Failed to start with ${executable}:`, err);
-        executableIndex++;
-        backendProcess = null;
-        tryNextExecutable();
-      });
-
-      // Handle backend process output
-      backendProcess.stdout.on('data', (data) => {
-        console.log(`Backend stdout: ${data}`);
-
-        // Check if server is running
-        if (data.toString().includes('Running on http://')) {
-          backendReady = true;
-          resolve();
-        }
-      });
-
-      backendProcess.stderr.on('data', (data) => {
-        console.error(`Backend stderr: ${data}`);
-      });
-
-      backendProcess.on('close', (code) => {
-        // If process closed without becoming ready and it's not an error we already handled
-        if (!backendReady && code !== null) {
-          console.log(`Backend process with ${executable} exited with code ${code}`);
-          executableIndex++;
-          backendProcess = null;
-          tryNextExecutable();
-        } else {
-          console.log(`Backend process exited with code ${code}`);
-          backendProcess = null;
-        }
-      });
-    };
-    
-    // Start trying executables
-    tryNextExecutable();
+    });
 
     // Set a timeout for startup
     setTimeout(() => {
       if (!backendReady) {
         console.error('Backend startup timed out');
         if (backendProcess) {
-          // If process is still running but not sending the expected message,
-          // let's try connecting anyway
-          console.log('Backend process is running but not sending ready signal. Attempting to connect anyway...');
-          backendReady = true;
-          resolve();
-        } else {
-          reject(new Error('Backend startup timed out'));
+          backendProcess.kill();
+          backendProcess = null;
         }
+        reject(new Error('Backend startup timed out'));
       }
-    }, 30000);
+    }, 10000);
   });
+}
+
+// Read port from backend_port.txt file
+function readBackendPortFromFile() {
+  try {
+    const portFile = path.join(__dirname, '..', 'backend_port.txt');
+    
+    if (fs.existsSync(portFile)) {
+      const port = parseInt(fs.readFileSync(portFile, 'utf8').trim(), 10);
+      console.log(`Read backend port ${port} from file`);
+      
+      if (!isNaN(port) && port > 0) {
+        backendPort = port;
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error reading backend port file:', error);
+    return false;
+  }
 }
 
 // Check if backend is ready by pinging the API
 async function checkBackendReady() {
   try {
-    const response = await axios.get(`http://localhost:${backendPort}/api/status`);
+    // Try to read port from file first if we're in external mode
+    if (process.argv.includes('--external-backend')) {
+      readBackendPortFromFile();
+    }
+    
+    console.log(`Checking backend status on port ${backendPort}...`);
+    // Explicitly use IPv4 address (127.0.0.1) instead of localhost which might resolve to IPv6
+    const response = await axios.get(`http://127.0.0.1:${backendPort}/api/status`);
     return response.status === 200;
   } catch (error) {
+    console.error(`Backend check failed on port ${backendPort}:`, error.message);
     return false;
   }
 }
 
 // Wait for backend to be ready with polling
-async function waitForBackend(maxAttempts = 10, interval = 500) {
+async function waitForBackend(maxAttempts = 20, interval = 1000) {
+  console.log(`Waiting for backend to be ready...`);
+  
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (await checkBackendReady()) {
-      return true;
+    console.log(`Connection attempt ${attempt + 1}/${maxAttempts}`);
+    
+    // Always read the port file first on each attempt
+    if (process.argv.includes('--external-backend')) {
+      const portFileExists = readBackendPortFromFile();
+      console.log(`Port file ${portFileExists ? 'found' : 'not found'}, using port ${backendPort}`);
     }
+    
+    try {
+      if (await checkBackendReady()) {
+        console.log('Backend is ready!');
+        return true;
+      }
+    } catch (error) {
+      console.log(`Connection failed: ${error.message || 'Unknown error'}`);
+    }
+    
     await new Promise(resolve => setTimeout(resolve, interval));
   }
+  
+  console.error(`Failed to connect to backend after ${maxAttempts} attempts`);
   return false;
 }
 
 // Initialize the app
 app.whenReady().then(async () => {
   try {
-    // Start the backend server
-    await startBackend();
+    console.log("Electron app is ready");
+    console.log("Command line arguments:", process.argv);
+    
+    if (process.argv.includes('--external-backend')) {
+      console.log("Using external backend mode");
+      // Try to read port from file immediately 
+      const portFound = readBackendPortFromFile();
+      console.log(`Port file read success: ${portFound}, using port ${backendPort}`);
+    } else {
+      // Start the backend server
+      console.log("Starting internal backend");
+      await startBackend();
+    }
     
     // Wait for backend to be ready
+    console.log("Now waiting for backend to be ready...");
     if (await waitForBackend()) {
       console.log('Backend is ready');
       createWindow();

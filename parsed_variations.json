@@ -1,0 +1,99 @@
+{
+  "variables": [
+    "GPA Range",
+    "Distance",
+    "Academic Field of Interest"
+  ],
+  "levels": {
+    "GPA Range": [
+      {
+        "value": "Unknown/Null",
+        "data": "Default"
+      },
+      {
+        "value": "3.3+",
+        "data": "1"
+      },
+      {
+        "value": "2.7-3.3",
+        "data": "2"
+      },
+      {
+        "value": "2.7 or lower",
+        "data": "3"
+      }
+    ],
+    "Distance": [
+      {
+        "value": "Unknown/Null",
+        "data": "Default"
+      },
+      {
+        "value": "0-25 Miles",
+        "data": "1"
+      },
+      {
+        "value": "26-100 Miles",
+        "data": "2"
+      },
+      {
+        "value": "101-300 Miles",
+        "data": "3"
+      }
+    ],
+    "Academic Field of Interest": [
+      {
+        "value": "Health",
+        "data": "1"
+      },
+      {
+        "value": "Default",
+        "data": "Default"
+      },
+      {
+        "value": "African American Studies",
+        "data": "2"
+      },
+      {
+        "value": "Business, Management, Marketing, and Support Services",
+        "data": "3"
+      },
+      {
+        "value": "Biological and Biomedical Sciences",
+        "data": "4"
+      },
+      {
+        "value": "Visual and Performing Arts",
+        "data": "5"
+      },
+      {
+        "value": "Legal Professions and Studies",
+        "data": "6"
+      },
+      {
+        "value": "Communication, Journalism, and Related Programs",
+        "data": "7"
+      },
+      {
+        "value": "Graduate English Association, Ink! Undergraduate English Association",
+        "data": "8"
+      },
+      {
+        "value": "Foreign Languages, Literatures, and Linguistics",
+        "data": "9"
+      },
+      {
+        "value": "Area, Ethnic, Cultural, Gender, and Group Studies",
+        "data": "10"
+      },
+      {
+        "value": "Communications Technologies",
+        "data": "11"
+      },
+      {
+        "value": "Education",
+        "data": "12"
+      }
+    ]
+  }
+}

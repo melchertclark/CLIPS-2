@@ -89,14 +89,47 @@
                 <div class="instruction-section card mt-3">
                     <div class="card-header" data-bs-toggle="collapse" data-bs-target="#variation-list-section">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>Variation List Data</span>
+                            <span>Variation Definition</span>
+                            <span class="variation-count-badge"></span>
                             <i class="bi bi-chevron-down"></i>
                         </div>
                     </div>
                     <div class="collapse show" id="variation-list-section">
                         <div class="card-body">
-                            <div id="variation-list-empty" class="text-muted fst-italic">No variation data loaded. Use "Import > Load Variation Definition" to load a PDF.</div>
-                            <div id="variation-list-content" style="display: none;"></div>
+                            <div id="variation-list-empty" class="alert alert-info">
+                                <h5><i class="bi bi-info-circle"></i> No Variation Data Loaded</h5>
+                                <p>A variation definition PDF defines the different versions of your content that will be generated.</p>
+                                <p>Key elements:</p>
+                                <ul>
+                                    <li><strong>Variables</strong> (like GPA, Distance, Academic Field of Interest)</li>
+                                    <li><strong>Levels</strong> (the possible values for each variable)</li>
+                                    <li><strong>Variation IDs</strong> (used to match with JSON data)</li>
+                                </ul>
+                                <p>Use <strong>Import → Load Variation Definition</strong> to load a PDF.</p>
+                            </div>
+                            <div id="variation-list-content" style="display: none;">
+                                <div class="variation-summary mb-3">
+                                    <div class="alert alert-primary">
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <h5 class="mb-1">Variation Summary</h5>
+                                                <p class="mb-0"><span id="total-variations-count">0</span> total possible combinations</p>
+                                            </div>
+                                            <div class="ms-auto">
+                                                <button class="btn btn-sm btn-outline-primary" id="preview-variations-btn">
+                                                    <i class="bi bi-eye"></i> Preview Samples
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="variables-tables-container"></div>
+                                <div class="mt-3">
+                                    <button id="edit-variations-btn" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil-square"></i> Edit Variable Values
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -105,24 +138,57 @@
                 <div class="instruction-section card mt-3">
                     <div class="card-header" data-bs-toggle="collapse" data-bs-target="#json-data-section">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>Imported Content Data</span>
+                            <span>Content Data</span>
                             <i class="bi bi-chevron-down"></i>
                         </div>
                     </div>
                     <div class="collapse show" id="json-data-section">
                         <div class="card-body">
-                            <div id="json-data-empty" class="text-muted fst-italic">No JSON data loaded. Use "Import > Load Programs/Clubs JSON" to load JSON files.</div>
-                            <div id="json-data-content" style="display: none;">
-                                <ul class="list-group">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center" id="programs-json-item" style="display: none;">
-                                        Programs Data
-                                        <span class="badge bg-success rounded-pill">Loaded</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center" id="clubs-json-item" style="display: none;">
-                                        Clubs Data
-                                        <span class="badge bg-success rounded-pill">Loaded</span>
-                                    </li>
+                            <div id="json-data-empty" class="alert alert-info">
+                                <h5><i class="bi bi-info-circle"></i> No Content Data Loaded</h5>
+                                <p>Content data provides the details for each Academic Field of Interest.</p>
+                                <p>Two types of content files:</p>
+                                <ul>
+                                    <li><strong>Programs JSON</strong> - Academic program details for each field</li>
+                                    <li><strong>Clubs JSON</strong> - Student organization details for each field</li>
                                 </ul>
+                                <p>These files are linked to the variation definition through the <strong>eab_cip_code</strong> field which matches the Academic Field of Interest variation numbers.</p>
+                                <p>Use <strong>Import → Load Programs/Clubs JSON</strong> to load these files.</p>
+                            </div>
+                            <div id="json-data-content" style="display: none;">
+                                <div class="data-files-status mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Content Files Status</h6>
+                                        </div>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center" id="programs-json-item" style="display: none;">
+                                                <div>
+                                                    <strong>Programs Data</strong>
+                                                    <div class="text-muted small" id="programs-cip-count"></div>
+                                                </div>
+                                                <span class="badge bg-success">Loaded</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center" id="clubs-json-item" style="display: none;">
+                                                <div>
+                                                    <strong>Clubs Data</strong>
+                                                    <div class="text-muted small" id="clubs-cip-count"></div>
+                                                </div>
+                                                <span class="badge bg-success">Loaded</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div id="json-academic-field-match" class="mb-3" style="display: none;">
+                                    <div class="alert alert-warning">
+                                        <strong><i class="bi bi-exclamation-triangle"></i> Content-Variation Mapping</strong>
+                                        <p class="mb-1">For content to be included in your variations:</p>
+                                        <ul class="mb-0">
+                                            <li>The <strong>Academic Field of Interest</strong> variation numbers must match <strong>eab_cip_code</strong> values in your JSON files</li>
+                                            <li>Each combination will only include content specific to that field variation</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -368,6 +434,47 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="confirm-json-type-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Variables Modal -->
+    <div class="modal fade" id="editVariablesModal" tabindex="-1" aria-labelledby="editVariablesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editVariablesModalLabel">Edit Variable Values</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="accordion" id="editVariablesAccordion">
+                        <!-- Variables accordions will be dynamically added here -->
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Add New Variable Level</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <select class="form-select" id="new-level-variable">
+                                    <!-- Variables will be added here -->
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="text" class="form-control" id="new-level-id" placeholder="ID/Number">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="new-level-value" placeholder="Value">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary" id="add-new-level-btn">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-variable-edits-btn">Save Changes</button>
                 </div>
             </div>
         </div>

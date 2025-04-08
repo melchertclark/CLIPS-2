@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variation Definition Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], 
+        input[type="url"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .button-secondary {
+            background-color: #2196F3;
+        }
+        .button-secondary:hover {
+            background-color: #0b7dda;
+        }
+        .button-danger {
+            background-color: #f44336;
+        }
+        .button-danger:hover {
+            background-color: #d32f2f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .hidden {
+            display: none;
+        }
+        #spinner {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner-icon {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .alert-error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Variation Definition Editor</h1>
+        
+        <div id="alert" class="hidden"></div>
+        
+        <div id="parser-form">
+            <h2>Parse PDF</h2>
+            <div class="form-group">
+                <label for="pdf-source">PDF Source:</label>
+                <select id="pdf-source">
+                    <option value="url">URL</option>
+                    <option value="file">Local File Path</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="url-input">
+                <label for="pdf-url">PDF URL:</label>
+                <input type="url" id="pdf-url" placeholder="https://example.com/variation.pdf">
+            </div>
+            
+            <div class="form-group hidden" id="path-input">
+                <label for="pdf-path">Local File Path:</label>
+                <input type="text" id="pdf-path" placeholder="/path/to/variation.pdf">
+            </div>
+            
+            <div class="form-group">
+                <label for="format-type">Format Type:</label>
+                <select id="format-type">
+                    <option value="">Auto-detect</option>
+                    <option value="south_carolina">South Carolina</option>
+                    <option value="standard">Standard</option>
+                </select>
+            </div>
+            
+            <button id="parse-btn">Parse PDF</button>
+        </div>
+        
+        <div id="spinner" class="hidden">
+            <div class="spinner-icon"></div>
+            <p>Processing. Please wait...</p>
+        </div>
+        
+        <div id="editor" class="hidden">
+            <h2>Edit Variation Set</h2>
+            <div id="variables-container">
+                <!-- Variables will be loaded here -->
+            </div>
+            
+            <div class="form-group">
+                <button id="save-btn" class="button-secondary">Save Changes</button>
+                <button id="download-btn" class="button-secondary">Download JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const pdfSourceSelect = document.getElementById('pdf-source');
+        const urlInput = document.getElementById('url-input');
+        const pathInput = document.getElementById('path-input');
+        const pdfUrl = document.getElementById('pdf-url');
+        const pdfPath = document.getElementById('pdf-path');
+        const formatType = document.getElementById('format-type');
+        const parseBtn = document.getElementById('parse-btn');
+        const spinner = document.getElementById('spinner');
+        const editor = document.getElementById('editor');
+        const variablesContainer = document.getElementById('variables-container');
+        const saveBtn = document.getElementById('save-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const alertEl = document.getElementById('alert');
+        
+        // Current variation set
+        let currentVariationSet = null;
+        
+        // Toggle between URL and file path
+        pdfSourceSelect.addEventListener('change', () => {
+            if (pdfSourceSelect.value === 'url') {
+                urlInput.classList.remove('hidden');
+                pathInput.classList.add('hidden');
+            } else {
+                urlInput.classList.add('hidden');
+                pathInput.classList.remove('hidden');
+            }
+        });
+        
+        // Parse PDF
+        parseBtn.addEventListener('click', async () => {
+            // Get input values
+            const source = pdfSourceSelect.value;
+            const url = pdfUrl.value.trim();
+            const path = pdfPath.value.trim();
+            const format = formatType.value;
+            
+            // Validate input
+            if (source === 'url' && !url) {
+                showAlert('Please enter a PDF URL', 'error');
+                return;
+            } else if (source === 'file' && !path) {
+                showAlert('Please enter a file path', 'error');
+                return;
+            }
+            
+            // Prepare request data
+            const requestData = {
+                format_type: format || undefined
+            };
+            
+            if (source === 'url') {
+                requestData.pdf_url = url;
+            } else {
+                requestData.pdf_path = path;
+            }
+            
+            // Show loading spinner
+            spinner.classList.remove('hidden');
+            editor.classList.add('hidden');
+            
+            try {
+                // Send request to API
+                const response = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+                
+                // Parse JSON response
+                const data = await response.json();
+                
+                // Store variation set
+                currentVariationSet = data;
+                
+                // Render editor
+                renderEditor(currentVariationSet);
+                
+                // Show editor
+                spinner.classList.add('hidden');
+                editor.classList.remove('hidden');
+                
+                showAlert('PDF parsed successfully!', 'success');
+            } catch (error) {
+                console.error('Error parsing PDF:', error);
+                showAlert(`Error parsing PDF: ${error.message}`, 'error');
+                spinner.classList.add('hidden');
+            }
+        });
+        
+        // Render editor with variables and levels
+        function renderEditor(variationSet) {
+            variablesContainer.innerHTML = '';
+            
+            // Create section for each variable
+            variationSet.variables.forEach(variable => {
+                const levels = variationSet.levels[variable] || [];
+                
+                const variableSection = document.createElement('div');
+                variableSection.classList.add('variable-section');
+                
+                // Variable header
+                const header = document.createElement('h3');
+                header.textContent = variable;
+                variableSection.appendChild(header);
+                
+                // Add new level button
+                const addButton = document.createElement('button');
+                addButton.textContent = 'Add New Level';
+                addButton.classList.add('button-secondary');
+                addButton.style.marginBottom = '10px';
+                addButton.addEventListener('click', () => {
+                    // Prompt for new level details
+                    const value = prompt('Enter value for new level:');
+                    if (!value) return;
+                    
+                    const data = prompt('Enter data ID (leave empty for auto-assignment):') || null;
+                    
+                    // Add new level
+                    addLevel(variable, value, data);
+                });
+                variableSection.appendChild(addButton);
+                
+                // Create table for levels
+                const table = document.createElement('table');
+                
+                // Table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                ['ID', 'Value', 'Actions'].forEach(text => {
+                    const th = document.createElement('th');
+                    th.textContent = text;
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                // Table body
+                const tbody = document.createElement('tbody');
+                
+                levels.forEach(level => {
+                    const row = document.createElement('tr');
+                    
+                    // ID cell
+                    const idCell = document.createElement('td');
+                    idCell.textContent = level.data;
+                    row.appendChild(idCell);
+                    
+                    // Value cell
+                    const valueCell = document.createElement('td');
+                    
+                    const valueInput = document.createElement('input');
+                    valueInput.type = 'text';
+                    valueInput.value = level.value;
+                    valueInput.dataset.variable = variable;
+                    valueInput.dataset.data = level.data;
+                    valueInput.classList.add('level-value');
+                    
+                    valueCell.appendChild(valueInput);
+                    row.appendChild(valueCell);
+                    
+                    // Actions cell
+                    const actionsCell = document.createElement('td');
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.classList.add('button-danger');
+                    deleteBtn.addEventListener('click', () => {
+                        if (confirm(`Delete level ${level.data} (${level.value})?`)) {
+                            deleteLevel(variable, level.data);
+                        }
+                    });
+                    
+                    actionsCell.appendChild(deleteBtn);
+                    row.appendChild(actionsCell);
+                    
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(tbody);
+                variableSection.appendChild(table);
+                
+                variablesContainer.appendChild(variableSection);
+            });
+        }
+        
+        // Save changes
+        saveBtn.addEventListener('click', () => {
+            // Collect all field updates
+            const updates = [];
+            
+            document.querySelectorAll('.level-value').forEach(input => {
+                const variable = input.dataset.variable;
+                const data = input.dataset.data;
+                const value = input.value;
+                
+                // Find original level
+                const originalLevel = currentVariationSet.levels[variable].find(l => l.data === data);
+                
+                // Only add to updates if value changed
+                if (originalLevel && originalLevel.value !== value) {
+                    updates.push({
+                        variable,
+                        data,
+                        value
+                    });
+                }
+            });
+            
+            if (updates.length === 0) {
+                showAlert('No changes to save', 'success');
+                return;
+            }
+            
+            // Apply updates
+            updateVariationSet(updates);
+        });
+        
+        // Update variation set
+        async function updateVariationSet(updates) {
+            try {
+                const response = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        variation_set: currentVariationSet,
+                        field_updates: updates
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+                
+                // Update current variation set
+                currentVariationSet = await response.json();
+                
+                // Re-render editor
+                renderEditor(currentVariationSet);
+                
+                showAlert(`Successfully updated ${updates.length} field(s)`, 'success');
+            } catch (error) {
+                console.error('Error updating fields:', error);
+                showAlert(`Error updating fields: ${error.message}`, 'error');
+            }
+        }
+        
+        // Add new level
+        async function addLevel(variable, value, data) {
+            try {
+                const response = await fetch('/api/add_field', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        variation_set: currentVariationSet,
+                        variable,
+                        value,
+                        data
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.statusText}`);
+                }
+                
+                // Update current variation set
+                currentVariationSet = await response.json();
+                
+                // Re-render editor
+                renderEditor(currentVariationSet);
+                
+                showAlert(`Successfully added new level to ${variable}`, 'success');
+            } catch (error) {
+                console.error('Error adding level:', error);
+                showAlert(`Error adding level: ${error.message}`, 'error');
+            }
+        }
+        
+        // Delete level
+        function deleteLevel(variable, data) {
+            // Find index of level to delete
+            const levels = currentVariationSet.levels[variable];
+            const index = levels.findIndex(l => l.data === data);
+            
+            if (index === -1) return;
+            
+            // Remove level
+            levels.splice(index, 1);
+            
+            // Re-render editor
+            renderEditor(currentVariationSet);
+            
+            showAlert(`Successfully deleted level from ${variable}`, 'success');
+        }
+        
+        // Download JSON
+        downloadBtn.addEventListener('click', () => {
+            if (!currentVariationSet) return;
+            
+            // Create download link
+            const dataStr = JSON.stringify(currentVariationSet, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportName = 'variation_definition.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportName);
+            linkElement.click();
+        });
+        
+        // Show alert message
+        function showAlert(message, type) {
+            alertEl.textContent = message;
+            alertEl.className = `alert alert-${type}`;
+            alertEl.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertEl.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

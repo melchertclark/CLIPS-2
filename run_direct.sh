@@ -1,42 +1,30 @@
 #!/bin/bash
 
-# This script starts the backend and frontend separately
+# Direct starter script for CLIPS - starts backend manually
 cd "$(dirname "$0")"
-
-# Make sure script is executable
-chmod +x start_backend.py
-
-# Ensure virtual environment if exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
 
 # Create required directories if they don't exist
 mkdir -p logs sessions output temp_uploads
 
-# Verify Python is available
-if command -v python3 &> /dev/null; then
-    echo "Using python3"
-    PYTHON_CMD="python3"
-elif command -v python &> /dev/null; then
-    echo "Using python"
-    PYTHON_CMD="python"
-else
-    echo "Error: Python not found. Please install Python 3."
-    exit 1
-fi
+# Clear any existing Python processes on port 5000
+lsof -ti:5000 | xargs kill -9 2>/dev/null || true
+sleep 1
 
-# Start the backend directly
-echo "Starting backend server..."
-$PYTHON_CMD start_backend.py 5000 &
+# Start the backend directly in a separate process
+echo "Starting backend..."
+cd "$(dirname "$0")"
+python3 backend/main.py &
 BACKEND_PID=$!
 
 # Wait for the backend to start
+echo "Waiting for backend to start..."
 sleep 3
 
-# Start the frontend
+# Start the frontend with external backend flag
 echo "Starting frontend..."
-npx electron . --debug
+cd "$(dirname "$0")"
+npx electron . --external-backend
 
 # Kill the backend when the frontend exits
-kill $BACKEND_PID
+echo "Stopping backend process..."
+kill $BACKEND_PID 2>/dev/null || echo "Backend already stopped."

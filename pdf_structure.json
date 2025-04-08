@@ -1,0 +1,460 @@
+{
+  "page_count": 8,
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": false,
+      "table_count": 0,
+      "text_sample": "Variables Used for Hyper-\nPersonalization\nUNIVERSITY OF SOUTH CAROLINA\n\u00a92025 by EAB. All Rights Reserved. 1 eab.com",
+      "tables": []
+    },
+    {
+      "page_number": 2,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 3,
+      "text_sample": "Variables Used for Personalization\nIn order to introduce hyper-personalization into your communication stream, we\u2019ve mapped your majors\nand clubs to standardized Field of Interest values \u2013 the same va...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 5,
+          "columns": 8,
+          "header": [
+            "",
+            "Variation #",
+            "",
+            "GPA Range",
+            "",
+            "",
+            "Level of Flattery",
+            ""
+          ],
+          "first_row": [
+            "",
+            "Default",
+            "",
+            "Unknown/Null",
+            "",
+            "",
+            "Lowest",
+            ""
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 7,
+          "columns": 8,
+          "header": [
+            "",
+            "Variation #",
+            "",
+            "Distance Band",
+            "",
+            "",
+            "Level of Specificity",
+            ""
+          ],
+          "first_row": [
+            "",
+            "Default",
+            "",
+            "Unknown/Null",
+            "",
+            "",
+            "Most high-level",
+            ""
+          ]
+        },
+        {
+          "table_number": 3,
+          "rows": 25,
+          "columns": 8,
+          "header": [
+            "",
+            "Variation #",
+            "",
+            "Field of Interest",
+            "",
+            "",
+            "Programs",
+            ""
+          ],
+          "first_row": [
+            "",
+            "Default",
+            "",
+            "Unknown/Null",
+            "",
+            "",
+            "Default",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 3,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 3,
+      "text_sample": "Photography: Studio Art, B.F.A., Printmaking: Studio Art, B.F.A.,\nStudio Art, B.A., Theatre, B.A., Theory: Music, B.M.\n6 Psychology Applied Sport Psychology and Counseling, B.S., Psychology, B.A. /\nB....",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 55,
+          "columns": 9,
+          "header": [
+            "",
+            null,
+            null,
+            "",
+            null,
+            null,
+            "",
+            "Photography: Studio Art, B.F.A., Printmaking: Studio Art, B.F.A.,",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Studio Art, B.A., Theatre, B.A., Theory: Music, B.M.",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 3,
+          "columns": 1,
+          "header": [
+            "African American Studies, B.A., Geography, B.A., Global Studies,"
+          ],
+          "first_row": [
+            "B.A., International Studies, B.A., Women's and Gender Studies,"
+          ]
+        },
+        {
+          "table_number": 3,
+          "rows": 4,
+          "columns": 9,
+          "header": [
+            "",
+            "Variation #",
+            "",
+            "",
+            "Field of Interest",
+            "",
+            "",
+            "Programs",
+            ""
+          ],
+          "first_row": [
+            "",
+            "Default",
+            "",
+            "",
+            "Unknown/Null",
+            "",
+            "",
+            "Default",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 4,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 3,
+      "text_sample": "Related Pharmacists, American Physician Scientist Association, American\nPrograms Society of Pharmacognosy Student Chapter, ASDA Pre-Dental\nClub, Asian Barbell Association, Aspiring Pre-Health Student\n...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 72,
+          "columns": 5,
+          "header": [
+            "",
+            "Related\nPrograms",
+            "",
+            "Pharmacists, American Physician Scientist Association, American",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            "Society of Pharmacognosy Student Chapter, ASDA Pre-Dental",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Related"
+          ],
+          "first_row": [
+            "Programs"
+          ]
+        },
+        {
+          "table_number": 3,
+          "rows": 5,
+          "columns": 1,
+          "header": [
+            "Business,"
+          ],
+          "first_row": [
+            "Management,"
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 5,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 3,
+      "text_sample": "Economic Society, Gamma Iota Sigma, Global Leadership Network,\nGraduate Gamecock Consulting Club, Graduate Women in\nBusiness, HRSM Entreprenuers, HRSM Global Community Club,\nHTMT Planners Club, IDEA C...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 71,
+          "columns": 5,
+          "header": [
+            "",
+            "",
+            "",
+            "Economic Society, Gamma Iota Sigma, Global Leadership Network,",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            "Graduate Gamecock Consulting Club, Graduate Women in",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 3,
+          "columns": 1,
+          "header": [
+            "Biological and"
+          ],
+          "first_row": [
+            "Biomedical"
+          ]
+        },
+        {
+          "table_number": 3,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Visual and"
+          ],
+          "first_row": [
+            "Performing Arts"
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 6,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 2,
+      "text_sample": "and White Water Club, Carolina Movement Club, Carolina Natyam\nClub, Carolina Pickleball Club, Carolina Pottery Club, Carolina\nProductions, Carolina Recreational Tennis Club, Carolina Skate\nClub, Carol...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 69,
+          "columns": 7,
+          "header": [
+            "",
+            "",
+            null,
+            null,
+            "",
+            "and White Water Club, Carolina Movement Club, Carolina Natyam",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Club, Carolina Pickleball Club, Carolina Pottery Club, Carolina",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 3,
+          "columns": 1,
+          "header": [
+            "Legal"
+          ],
+          "first_row": [
+            "Professions and"
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 7,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 2,
+      "text_sample": "Phi Alpha Fraternity, Inc., Alpha Phi Omega, Alpha Sigma Phi,\nAlpha Sigma Rho Sorority, Inc., Alpha Xi Delta, American Civil\nLiberties Union (Columbia College Chapter), Anthropology\nGraduate Organizat...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 72,
+          "columns": 5,
+          "header": [
+            "",
+            "",
+            "",
+            "Phi Alpha Fraternity, Inc., Alpha Phi Omega, Alpha Sigma Phi,",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            "Alpha Sigma Rho Sorority, Inc., Alpha Xi Delta, American Civil",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Communication,"
+          ],
+          "first_row": [
+            "Journalism, and"
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 8,
+      "width": 612,
+      "height": 792,
+      "has_text": true,
+      "has_tables": true,
+      "table_count": 6,
+      "text_sample": "Related Incubate Debate South Carolina, Library and Information Science\nPrograms Student Association, National Association of Black Journalists,\nPublic Relations Student Society of America, Rhetoric S...",
+      "tables": [
+        {
+          "table_number": 1,
+          "rows": 42,
+          "columns": 9,
+          "header": [
+            "",
+            null,
+            null,
+            "Related\nPrograms",
+            null,
+            null,
+            "",
+            "Incubate Debate South Carolina, Library and Information Science",
+            ""
+          ],
+          "first_row": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Student Association, National Association of Black Journalists,",
+            null
+          ]
+        },
+        {
+          "table_number": 2,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Related"
+          ],
+          "first_row": [
+            "Programs"
+          ]
+        },
+        {
+          "table_number": 3,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Graduate English Association, Ink! Undergraduate English"
+          ],
+          "first_row": [
+            "Association"
+          ]
+        },
+        {
+          "table_number": 4,
+          "rows": 4,
+          "columns": 1,
+          "header": [
+            "Foreign"
+          ],
+          "first_row": [
+            "Languages,"
+          ]
+        },
+        {
+          "table_number": 5,
+          "rows": 2,
+          "columns": 1,
+          "header": [
+            "Central South Carolina Habitat for Humanity Campus Chapter,"
+          ],
+          "first_row": [
+            "Leadership and Service Center"
+          ]
+        },
+        {
+          "table_number": 6,
+          "rows": 4,
+          "columns": 1,
+          "header": [
+            "Area, Ethnic,"
+          ],
+          "first_row": [
+            "Cultural,"
+          ]
+        }
+      ]
+    }
+  ]
+}

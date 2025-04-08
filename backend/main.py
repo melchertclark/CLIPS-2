@@ -21,14 +21,18 @@ from backend.output_generator import OutputGenerator
 app = Flask(__name__)
 
 # Enable CORS for all routes with explicit settings
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Add CORS headers to all responses
 @app.after_request
 def add_cors_headers(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        response.status_code = 200
     return response
 
 # Add OPTIONS handler for all routes
@@ -239,10 +243,18 @@ def parse_json():
         # Update session state based on data type
         data_type = indexed_data.get("type", "unknown")
         if data_type == "programs" or "program" in json_file.filename.lower():
+            # Clear any existing programs data first
             current_session["imported_data"]["programs"] = indexed_data
+            # Make sure clubs data is not falsely shown if not loaded
+            if not current_session["imported_data"]["clubs"]:
+                current_session["imported_data"]["clubs"] = None
             app_logger.info(f"Identified as programs data")
         elif data_type == "clubs" or "club" in json_file.filename.lower():
+            # Clear any existing clubs data first
             current_session["imported_data"]["clubs"] = indexed_data
+            # Make sure programs data is not falsely shown if not loaded
+            if not current_session["imported_data"]["programs"]:
+                current_session["imported_data"]["programs"] = None
             app_logger.info(f"Identified as clubs data")
         else:
             # Ask user which type this is?
@@ -285,8 +297,14 @@ def set_json_type():
         # Update session state
         if data_type == "programs":
             current_session["imported_data"]["programs"] = indexed_data
+            # Ensure clubs data is null if not present to prevent display issues
+            if not current_session["imported_data"].get("clubs"):
+                current_session["imported_data"]["clubs"] = None
         elif data_type == "clubs":
             current_session["imported_data"]["clubs"] = indexed_data
+            # Ensure programs data is null if not present to prevent display issues
+            if not current_session["imported_data"].get("programs"):
+                current_session["imported_data"]["programs"] = None
         
         # Save the session
         session_manager.save_session(current_session)
@@ -505,6 +523,162 @@ def process_feedback():
         app_logger.exception("Failed to process feedback")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/variations/preview_samples', methods=['POST'])
+def preview_sample_variations():
+    """Generate a few sample variations to preview"""
+    global current_session
+    
+    try:
+        # Check if we have necessary components
+        if not current_session["original_copy"]:
+            return jsonify({"error": "Original copy is required"}), 400
+            
+        if not current_session["instruction_set"].get("variation_list_data") or \
+           not current_session["instruction_set"]["variation_list_data"].get("variables"):
+            return jsonify({"error": "Variation definition data is required"}), 400
+        
+        # Log the action
+        logger.log_interaction("preview_sample_variations")
+        
+        # Prepare imported data
+        json_data = {
+            "programs": current_session["imported_data"].get("programs"),
+            "clubs": current_session["imported_data"].get("clubs")
+        }
+        
+        # Get variation data
+        variation_set = current_session["instruction_set"]["variation_list_data"]
+        variables = variation_set.get("variables", [])
+        levels = variation_set.get("levels", {})
+        
+        # Generate a few diverse sample variations
+        samples = []
+        max_samples = 3  # Number of samples to generate
+        
+        # Create different combinations of levels
+        # We'll use a few strategies to get diverse samples:
+        # 1. Default values for all variables
+        # 2. Random representative values
+        # 3. Edge case values (high/low)
+        
+        # Sample 1: Default values where possible
+        default_levels = {}
+        for var in variables:
+            if var in levels and levels[var]:
+                # Look for a level with 'Default' value
+                default_level = next((level for level in levels[var] if level.get("value", "").lower() == "default"), None)
+                if not default_level:
+                    # If no "Default" level, use the first one
+                    default_level = levels[var][0]
+                
+                # Format the level properly
+                level_value = default_level.get("value")
+                level_data = {
+                    "value": level_value
+                }
+                
+                # Add data field if present (like CIP code)
+                if "data" in default_level:
+                    level_data["data"] = default_level["data"]
+                    
+                default_levels[var] = level_data
+                
+        # Sample 2: Mid-range values
+        mid_levels = {}
+        for var in variables:
+            if var in levels and levels[var]:
+                # Get middle level
+                mid_idx = len(levels[var]) // 2
+                mid_level = levels[var][mid_idx]
+                
+                # Format the level properly
+                level_value = mid_level.get("value")
+                level_data = {
+                    "value": level_value
+                }
+                
+                # Add data field if present
+                if "data" in mid_level:
+                    level_data["data"] = mid_level["data"]
+                    
+                mid_levels[var] = level_data
+                
+        # Sample 3: High values or distinct values
+        high_levels = {}
+        for var in variables:
+            if var in levels and levels[var]:
+                # For GPA, use highest value
+                if "gpa" in var.lower():
+                    high_level = levels[var][-1]  # Highest GPA
+                # For distance, use furthest or closest depending on what's available
+                elif "distance" in var.lower():
+                    # Check if we have "out of state" or high distance values
+                    out_state = next((level for level in levels[var] if "out" in level.get("value", "").lower()), None)
+                    if out_state:
+                        high_level = out_state
+                    else:
+                        high_level = levels[var][-1]  # Furthest distance
+                # For academic field, use something different from the default
+                elif "academic" in var.lower() or "field" in var.lower():
+                    # Try to find a STEM field if possible
+                    stem_field = next((level for level in levels[var] if any(stem in level.get("value", "").lower() 
+                                                                     for stem in ["science", "engineering", "math", "computer", "technology"])), None)
+                    if stem_field:
+                        high_level = stem_field
+                    else:
+                        # Just pick one different from default
+                        high_level = levels[var][min(2, len(levels[var])-1)]
+                else:
+                    # For other variables, use last value
+                    high_level = levels[var][-1]
+                
+                # Format the level properly
+                level_value = high_level.get("value")
+                level_data = {
+                    "value": level_value
+                }
+                
+                # Add data field if present
+                if "data" in high_level:
+                    level_data["data"] = high_level["data"]
+                    
+                high_levels[var] = level_data
+        
+        # Generate the samples
+        sample_variations = [default_levels, mid_levels, high_levels]
+        
+        for i, variation_levels in enumerate(sample_variations):
+            try:
+                # Generate the content
+                content = ai_integration.generate_draft(
+                    current_session["original_copy"],
+                    current_session["instruction_set"],
+                    variation_levels,
+                    json_data
+                )
+                
+                samples.append({
+                    "id": i + 1,
+                    "levels": variation_levels,
+                    "content": content
+                })
+                
+                # If we have enough samples, stop
+                if len(samples) >= max_samples:
+                    break
+                    
+            except Exception as e:
+                app_logger.warning(f"Failed to generate sample {i+1}: {str(e)}")
+                continue
+        
+        return jsonify({
+            "success": True,
+            "samples": samples
+        })
+    except Exception as e:
+        app_logger.exception("Failed to preview sample variations")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/variations/generate_all', methods=['POST'])
 def generate_all_variations():
     """Generate all possible variations"""
@@ -547,9 +721,26 @@ def generate_all_variations():
         app_logger.exception("Failed to generate all variations")
         return jsonify({"error": str(e)}), 500
 
+def find_available_port(start_port=3000, max_attempts=100):
+    """Find an available port to use for the server"""
+    import socket
+    
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            in_use = s.connect_ex(('localhost', port)) == 0
+            if not in_use:
+                return port
+    
+    # If we get here, we couldn't find a free port
+    raise RuntimeError(f"Could not find an available port after {max_attempts} attempts")
+
 if __name__ == '__main__':
     # Determine port from command line or use default
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    else:
+        # Find an available port starting from 3000
+        port = find_available_port(3000)
     
     # Create temp directory if it doesn't exist
     os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "temp_uploads"), exist_ok=True)
@@ -559,5 +750,14 @@ if __name__ == '__main__':
     print(f"Creating required directories...")
     
     # Start the server
-    print(f"Running on http://127.0.0.1:{port}")
-    app.run(host='127.0.0.1', port=port, debug=True)
+    print(f"Running on http://0.0.0.0:{port} (accessible via 127.0.0.1)")
+    
+    # Open status file with port information
+    status_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend_port.txt")
+    with open(status_file_path, 'w') as f:
+        f.write(str(port))
+    print(f"Port information saved to {status_file_path}")
+    
+    # Run without debug mode to prevent automatic reloading
+    # Use 0.0.0.0 to bind to all available interfaces
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -195,10 +195,11 @@ class AIIntegration:
         
         # Final guidance
         prompt_parts.append("\n## Final Guidelines:\n"
-                         "1. Preserve the overall structure of the original copy."
-                         "2. Replace all {{MARKERS}} with appropriate content based on the variation levels and instructions."
-                         "3. Ensure the copy feels natural, engaging, and personalized to the specified variation levels."
-                         "4. Output ONLY the final copy, with no explanations or notes.")
+                         "1. Preserve the overall structure of the original copy.\n"
+                         "2. Replace all {{MARKERS}} with appropriate content based on the variation levels and instructions.\n"
+                         "3. Ensure the copy feels natural, engaging, and personalized to the specified variation levels.\n"
+                         "4. IMPORTANT: Instructions decline in priority down the page. If conflicts emerge during prompting, defer to the top instruction.\n"
+                         "5. Output ONLY the final copy, with no explanations or notes.")
         
         # Combine all parts into the final prompt
         full_prompt = "\n".join(prompt_parts)

@@ -1,40 +1,45 @@
 #!/bin/bash
 
-# Start the application
+# Simple starter script for CLIPS
 cd "$(dirname "$0")"
 
-# Ensure virtual environment if exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-fi
-
-# Create required directories if they don't exist
+# Create required directories
 mkdir -p logs sessions output temp_uploads
 
-# Verify Python is available
-if command -v python3 &> /dev/null; then
-    echo "Using python3"
-    PYTHON_CMD="python3"
-elif command -v python &> /dev/null; then
-    echo "Using python"
-    PYTHON_CMD="python"
-else
-    echo "Error: Python not found. Please install Python 3."
-    exit 1
+echo "Starting CLIPS..."
+
+# Stop any running processes
+pkill -f "python.*backend/main.py" 2>/dev/null || true
+rm -f backend_port.txt
+
+# Start backend server
+echo "Starting backend server..."
+python3 backend/main.py &
+BACKEND_PID=$!
+
+# Wait for port file
+echo "Waiting for port file..."
+for i in {1..10}; do
+  if [ -f "backend_port.txt" ]; then
+    PORT=$(cat backend_port.txt)
+    echo "Backend running on port: $PORT"
+    break
+  fi
+  sleep 1
+  echo "Waiting... ($i/10)"
+done
+
+# Verify backend is running
+if [ ! -f "backend_port.txt" ]; then
+  echo "ERROR: Backend failed to create port file"
+  kill $BACKEND_PID 2>/dev/null || true
+  exit 1
 fi
 
-# Verify pip is available
-if command -v pip3 &> /dev/null; then
-    PIP_CMD="pip3"
-elif command -v pip &> /dev/null; then
-    PIP_CMD="pip"
-else
-    echo "Error: pip not found. Please install pip."
-    exit 1
-fi
+# Start frontend
+echo "Starting frontend..."
+npx electron . --external-backend
 
-# Install required Python packages if not already installed
-$PIP_CMD install -r requirements.txt
-
-# Start the application
-npm start
+# Clean up
+kill $BACKEND_PID 2>/dev/null || true
+echo "Shutdown complete"

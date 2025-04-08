@@ -1,0 +1,134 @@
+2025-04-08 11:28:29.946 Electron[72430:11292405] WARNING: Secure coding is automatically enabled for restorable state! However, not on all supported macOS versions of this application. Opt-in to secure coding explicitly by implementing NSApplicationDelegate.applicationSupportsSecureRestorableState:.
+Electron app is ready
+Command line arguments: [
+  '/Users/CMelchert/CLIPS-2/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron',
+  '.',
+  '--external-backend'
+]
+Using external backend mode
+Read backend port 3000 from file
+Port file read success: true, using port 3000
+Now waiting for backend to be ready...
+Waiting for backend to be ready...
+Connection attempt 1/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 2/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 3/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 4/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 5/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 6/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 7/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 8/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 9/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 10/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 11/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 12/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 13/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 14/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 15/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 16/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 17/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 18/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 19/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Connection attempt 20/20
+Read backend port 3000 from file
+Port file found, using port 3000
+Read backend port 3000 from file
+Checking backend status on port 3000...
+Backend check failed on port 3000: connect ECONNREFUSED ::1:3000
+Failed to connect to backend after 20 attempts
+Backend failed to start properly

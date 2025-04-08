@@ -90,6 +90,69 @@ pre#generated-draft-output {
     background-color: #f8f9fa;
 }
 
+/* Variation data cards and tables */
+#variables-tables-container .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+}
+
+#variables-tables-container .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#variables-tables-container .table {
+    margin-bottom: 0;
+}
+
+#variables-tables-container .table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+#variables-tables-container .table td {
+    vertical-align: middle;
+}
+
+/* Academic Field specific styles */
+.academic-field-row:hover {
+    background-color: #f8f9fe;
+}
+
+.check-json-match-btn {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+}
+
+/* Variation count badge */
+.variation-count-badge {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Preview variations button */
+#preview-variations-btn {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+}
+
+/* JSON data display */
+#json-data-content .card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+#json-data-content .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+#json-academic-field-match .alert {
+    border-left: 4px solid #ffc107;
+}
+
 /* Results summary styling */
 .results-stat {
     font-size: 1.2rem;

@@ -2,14 +2,40 @@
 const { ipcRenderer } = require('electron');
 const axios = require('axios');
 
-// Backend API URL
-const API_BASE_URL = 'http://localhost:5000/api';
+// Backend API URL - will be updated with the correct port when the app starts
+let API_BASE_URL = 'http://127.0.0.1:3000/api';
 
-// Configure axios defaults
+// For debugging
+console.log(`Initial API base URL: ${API_BASE_URL}`);
+
+// Function to update the API base URL with the correct port
+function updateApiBaseUrl(port) {
+  API_BASE_URL = `http://127.0.0.1:${port}/api`;
+  console.log(`API base URL updated to: ${API_BASE_URL}`);
+}
+
+// Listen for port updates from the main process
+ipcRenderer.on('update-backend-port', (event, port) => {
+  console.log(`Received backend port update: ${port}`);
+  updateApiBaseUrl(port);
+});
+
+// Configure axios defaults - don't set Content-Type globally as it conflicts with file uploads
 axios.defaults.headers.common = {
-  'Content-Type': 'application/json',
   'Accept': 'application/json'
 };
+
+// For JSON requests, set the content type manually
+const jsonRequestInterceptor = axios.interceptors.request.use(
+  config => {
+    if (!config.data || !(config.data instanceof FormData)) {
+      // If not FormData, it's a JSON request
+      config.headers['Content-Type'] = 'application/json';
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
 
 // Add request interceptor for debugging
 axios.interceptors.request.use(request => {
@@ -70,6 +96,7 @@ const resultsContent = document.getElementById('results-content');
 const apiKeyModal = new bootstrap.Modal(document.getElementById('apiKeyModal'));
 const aboutModal = new bootstrap.Modal(document.getElementById('aboutModal'));
 const jsonTypeModal = new bootstrap.Modal(document.getElementById('jsonTypeModal'));
+const editVariablesModal = new bootstrap.Modal(document.getElementById('editVariablesModal'));
 const confirmGenerateAllModal = new bootstrap.Modal(document.getElementById('confirmGenerateAllModal'));
 const apiKeyInput = document.getElementById('api-key-input');
 const saveApiKeyBtn = document.getElementById('save-api-key-btn');
@@ -81,6 +108,13 @@ const clubsRadio = document.getElementById('clubsRadio');
 const confirmJsonTypeBtn = document.getElementById('confirm-json-type-btn');
 const variationCount = document.getElementById('variation-count');
 const confirmGenerateAllBtn = document.getElementById('confirm-generate-all-btn');
+const editVariationsBtn = document.getElementById('edit-variations-btn');
+const saveVariableEditsBtn = document.getElementById('save-variable-edits-btn');
+const editVariablesAccordion = document.getElementById('editVariablesAccordion');
+const newLevelVariable = document.getElementById('new-level-variable');
+const newLevelId = document.getElementById('new-level-id');
+const newLevelValue = document.getElementById('new-level-value');
+const addNewLevelBtn = document.getElementById('add-new-level-btn');
 
 // DOM Elements - Status and Toolbar
 const statusSpinner = document.getElementById('status-spinner');
@@ -191,6 +225,8 @@ function populateUIFromSession(session) {
 
 // Display variation list data
 function displayVariationListData(variationData) {
+    console.log("Displaying variation data:", variationData);
+    
     if (!variationData || !variationData.variables || variationData.variables.length === 0) {
         variationListEmpty.style.display = 'block';
         variationListContent.style.display = 'none';
@@ -200,34 +236,229 @@ function displayVariationListData(variationData) {
     const variables = variationData.variables;
     const levels = variationData.levels || {};
     
-    // Create HTML for the variation table
-    let html = '<div class="table-responsive"><table class="variation-table">';
-    html += '<thead><tr><th>Variable</th><th>Levels</th></tr></thead><tbody>';
-    
+    // Calculate total possible variations
+    let totalVariations = 1;
     variables.forEach(variable => {
-        const variableLevels = levels[variable] || [];
-        const levelsText = variableLevels.map(level => {
-            let text = level.value;
-            if (level.data) {
-                text += ` [${level.data}]`;
-            }
-            return text;
-        }).join(', ');
-        
-        html += `<tr><td>${variable}</td><td>${levelsText}</td></tr>`;
+        if (levels[variable]) {
+            totalVariations *= levels[variable].length;
+        }
     });
     
-    html += '</tbody></table></div>';
+    // Update total variations count
+    document.getElementById('total-variations-count').textContent = totalVariations.toLocaleString();
     
-    // Update the UI
-    variationListContent.innerHTML = html;
+    // Create a container for all variable tables
+    let tablesContainer = document.getElementById('variables-tables-container');
+    tablesContainer.innerHTML = '';
+    
+    // Create a card for each variable
+    variables.forEach(variable => {
+        const variableLevels = levels[variable] || [];
+        const isAcademicField = variable.toLowerCase().includes('academic') || variable.toLowerCase().includes('field');
+        
+        // Create a card for this variable
+        const variableCard = document.createElement('div');
+        variableCard.className = 'card mb-3';
+        variableCard.dataset.variable = variable;
+        
+        // Card header with variable name
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'card-header';
+        cardHeader.innerHTML = `<h6 class="mb-0">${variable} <span class="badge bg-secondary ms-2">${variableLevels.length} levels</span></h6>`;
+        variableCard.appendChild(cardHeader);
+        
+        // Card body with levels table
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body p-0';
+        
+        const table = document.createElement('table');
+        table.className = 'table table-sm mb-0';
+        
+        // Table header
+        const tableHeader = document.createElement('thead');
+        tableHeader.innerHTML = `
+            <tr>
+                <th>ID</th>
+                <th>Level</th>
+                ${isAcademicField ? '<th>CIP Code</th>' : ''}
+            </tr>
+        `;
+        table.appendChild(tableHeader);
+        
+        // Table body
+        const tableBody = document.createElement('tbody');
+        variableLevels.forEach(level => {
+            const row = document.createElement('tr');
+            
+            // Apply special styling for the academic field variable
+            if (isAcademicField) {
+                row.className = 'academic-field-row';
+            }
+            
+            // ID column (either "Default" or a number)
+            const idCell = document.createElement('td');
+            idCell.className = 'text-center';
+            idCell.style.width = '80px';
+            
+            // Format the ID column with special styling for Default
+            if (level.data && level.data.toLowerCase() === 'default') {
+                idCell.innerHTML = `<span class="badge bg-secondary">Default</span>`;
+            } else {
+                idCell.textContent = level.data || '';
+            }
+            row.appendChild(idCell);
+            
+            // Level/value column
+            const valueCell = document.createElement('td');
+            valueCell.textContent = level.value;
+            row.appendChild(valueCell);
+            
+            // Add CIP code column for academic field
+            if (isAcademicField) {
+                const cipCell = document.createElement('td');
+                cipCell.className = 'text-muted';
+                cipCell.textContent = level.data || '';
+                row.appendChild(cipCell);
+            }
+            
+            tableBody.appendChild(row);
+        });
+        table.appendChild(tableBody);
+        
+        cardBody.appendChild(table);
+        variableCard.appendChild(cardBody);
+        
+        // Add special info for Academic Field variable
+        if (isAcademicField) {
+            const academicFieldInfo = document.createElement('div');
+            academicFieldInfo.className = 'card-footer bg-light small';
+            academicFieldInfo.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="text-muted">
+                        <i class="bi bi-info-circle"></i> The ID values match with <code>eab_cip_code</code> in JSON files
+                    </div>
+                    <div class="ms-auto">
+                        <button class="btn btn-sm btn-outline-secondary check-json-match-btn">
+                            Check JSON Match
+                        </button>
+                    </div>
+                </div>
+            `;
+            variableCard.appendChild(academicFieldInfo);
+            
+            // Show the JSON matching info when academic field is present
+            document.getElementById('json-academic-field-match').style.display = 'block';
+        }
+        
+        // Add the card to the container
+        tablesContainer.appendChild(variableCard);
+    });
+    
+    // Show the variation content and hide the empty message
     variationListEmpty.style.display = 'none';
     variationListContent.style.display = 'block';
+    
+    // Add event listener for the check JSON match button
+    document.querySelectorAll('.check-json-match-btn').forEach(button => {
+        button.addEventListener('click', checkJsonFieldMatch);
+    });
+    
+    // Add event listener for the preview variations button
+    const previewBtn = document.getElementById('preview-variations-btn');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', previewSampleVariations);
+    }
+}
+
+// Function to check the match between Academic Field IDs and JSON CIP codes
+function checkJsonFieldMatch() {
+    if (!currentSession || 
+        !currentSession.instruction_set || 
+        !currentSession.instruction_set.variation_list_data ||
+        !currentSession.imported_data) {
+        return;
+    }
+    
+    try {
+        // Find the Academic Field variable and its levels
+        const academicFieldVariable = currentSession.instruction_set.variation_list_data.variables.find(
+            v => v.toLowerCase().includes('academic') || v.toLowerCase().includes('field')
+        );
+        
+        if (!academicFieldVariable) {
+            alert('Academic Field of Interest variable not found in variation data.');
+            return;
+        }
+        
+        const academicFieldLevels = currentSession.instruction_set.variation_list_data.levels[academicFieldVariable] || [];
+        
+        // Get the available CIP codes from JSON data
+        const programsCipCodes = currentSession.imported_data.programs ? 
+            Object.keys(currentSession.imported_data.programs.by_cip_code || {}) : [];
+        
+        const clubsCipCodes = currentSession.imported_data.clubs ? 
+            Object.keys(currentSession.imported_data.clubs.by_cip_code || {}) : [];
+        
+        // Create a match report
+        let matchedCount = 0;
+        let unmatchedCodes = [];
+        
+        academicFieldLevels.forEach(level => {
+            const cipCode = level.data;
+            if (!cipCode || cipCode.toLowerCase() === 'default') return;
+            
+            const hasPrograms = programsCipCodes.includes(cipCode);
+            const hasClubs = clubsCipCodes.includes(cipCode);
+            
+            if (!hasPrograms && !hasClubs) {
+                unmatchedCodes.push({
+                    field: level.value,
+                    code: cipCode
+                });
+            } else {
+                matchedCount++;
+            }
+        });
+        
+        // Show the results
+        let message = `<strong>Match Results:</strong><br>`;
+        message += `${matchedCount} out of ${academicFieldLevels.length} Academic Fields have matching content in JSON files.<br>`;
+        
+        if (unmatchedCodes.length > 0) {
+            message += `<br><strong>Fields without matching content:</strong><ul>`;
+            unmatchedCodes.forEach(item => {
+                message += `<li>${item.field} (ID: ${item.code})</li>`;
+            });
+            message += `</ul>`;
+        }
+        
+        // Display in a modal or alert
+        alert(message);
+        
+    } catch (error) {
+        console.error('Error checking JSON match:', error);
+        alert('An error occurred while checking JSON matches. See console for details.');
+    }
 }
 
 // Update JSON data display
 function updateJsonDataDisplay(importedData) {
-    if (!importedData || (!importedData.programs && !importedData.clubs)) {
+    console.log("Updating JSON data display with:", JSON.stringify(importedData, null, 2));
+    
+    if (!importedData) {
+        console.log("No imported data");
+        jsonDataEmpty.style.display = 'block';
+        jsonDataContent.style.display = 'none';
+        return;
+    }
+    
+    // Check if we have either programs or clubs data
+    const hasPrograms = importedData.programs && (typeof importedData.programs === 'object');
+    const hasClubs = importedData.clubs && (typeof importedData.clubs === 'object');
+    
+    console.log(`Has programs: ${hasPrograms}, Has clubs: ${hasClubs}`);
+    
+    if (!hasPrograms && !hasClubs) {
         jsonDataEmpty.style.display = 'block';
         jsonDataContent.style.display = 'none';
         return;
@@ -236,18 +467,56 @@ function updateJsonDataDisplay(importedData) {
     jsonDataEmpty.style.display = 'none';
     jsonDataContent.style.display = 'block';
     
-    // Display programs data status
-    if (importedData.programs) {
+    // Display programs data status with CIP code count
+    if (hasPrograms) {
+        console.log("Showing programs data");
         programsJsonItem.style.display = 'flex';
+        
+        // Count CIP codes
+        const cipCount = Object.keys(importedData.programs.by_cip_code || {}).length;
+        
+        // Update the count display
+        const programsCipCount = document.getElementById('programs-cip-count');
+        if (programsCipCount) {
+            programsCipCount.textContent = `${cipCount} unique CIP codes`;
+        }
     } else {
+        console.log("Hiding programs data");
         programsJsonItem.style.display = 'none';
     }
     
-    // Display clubs data status
-    if (importedData.clubs) {
+    // Display clubs data status with CIP code count
+    if (hasClubs) {
+        console.log("Showing clubs data");
         clubsJsonItem.style.display = 'flex';
+        
+        // Count CIP codes
+        const cipCount = Object.keys(importedData.clubs.by_cip_code || {}).length;
+        
+        // Update the count display
+        const clubsCipCount = document.getElementById('clubs-cip-count');
+        if (clubsCipCount) {
+            clubsCipCount.textContent = `${cipCount} unique CIP codes`;
+        }
     } else {
+        console.log("Hiding clubs data");
         clubsJsonItem.style.display = 'none';
+    }
+    
+    // Show the JSON academic field match warning if variation data is loaded
+    if (currentSession && 
+        currentSession.instruction_set && 
+        currentSession.instruction_set.variation_list_data &&
+        currentSession.instruction_set.variation_list_data.variables) {
+        
+        // Check if we have Academic Field in the variation data
+        const hasAcademicField = currentSession.instruction_set.variation_list_data.variables.some(
+            variable => variable.toLowerCase().includes('academic') || variable.toLowerCase().includes('field')
+        );
+        
+        if (hasAcademicField) {
+            document.getElementById('json-academic-field-match').style.display = 'block';
+        }
     }
 }
 
@@ -500,13 +769,15 @@ async function loadVariationPDF() {
         
         console.log('Uploading file:', filename, 'size:', fileContent.length);
         
-        // Upload and parse PDF with explicit content type boundary
+        // Upload and parse PDF with formData (axios will set the content-type boundary automatically)
         const response = await axios.post(`${API_BASE_URL}/parse/pdf`, formData, {
+            // DO NOT set Content-Type header manually, let axios set it with the correct boundary
             headers: {
-                'Content-Type': 'multipart/form-data'
+                // Clear any default headers that might interfere
+                'Accept': 'application/json'
             },
             // Increase timeout for large files
-            timeout: 30000
+            timeout: 60000
         });
         
         if (response.data.success) {
@@ -560,13 +831,15 @@ async function loadJsonFile(type) {
         
         console.log('Uploading JSON file:', filename, 'size:', fileContent.length);
         
-        // Upload and parse JSON
+        // Upload and parse JSON with formData (axios will set the content-type boundary automatically)
         const response = await axios.post(`${API_BASE_URL}/parse/json`, formData, {
+            // DO NOT set Content-Type header manually, let axios set it with the correct boundary
             headers: {
-                'Content-Type': 'multipart/form-data'
+                // Clear any default headers that might interfere
+                'Accept': 'application/json'
             },
             // Increase timeout for large files
-            timeout: 30000
+            timeout: 60000
         });
         
         if (response.data.success) {
@@ -778,6 +1051,107 @@ async function processFeedback() {
     }
 }
 
+// Preview sample variations to see how different combinations would look
+async function previewSampleVariations() {
+    try {
+        // Validate that we have the necessary data
+        if (!currentSession || 
+            !currentSession.instruction_set || 
+            !currentSession.instruction_set.variation_list_data || 
+            !currentSession.original_copy) {
+            await ipcRenderer.invoke('show-error-dialog', {
+                title: 'Preview Error',
+                message: 'Please load a variation definition and enter original copy before previewing variations.'
+            });
+            return;
+        }
+        
+        setStatusMessage('Generating variation previews...', true);
+        
+        // Request sample variations from the backend
+        const response = await axios.post(`${API_BASE_URL}/variations/preview_samples`);
+        
+        if (response.data.success) {
+            // Create a modal to display the samples
+            const previewModalHTML = `
+                <div class="modal fade" id="previewSamplesModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Sample Variations Preview</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Below are sample variations based on different combinations of your variation levels:</p>
+                                <div id="preview-samples-container"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add the modal to the DOM if it doesn't exist
+            if (!document.getElementById('previewSamplesModal')) {
+                document.body.insertAdjacentHTML('beforeend', previewModalHTML);
+            }
+            
+            // Generate the samples UI
+            const samplesContainer = document.getElementById('preview-samples-container');
+            samplesContainer.innerHTML = '';
+            
+            response.data.samples.forEach((sample, index) => {
+                const sampleCard = document.createElement('div');
+                sampleCard.className = 'card mb-3';
+                
+                // Create the card header with variation levels
+                const cardHeader = document.createElement('div');
+                cardHeader.className = 'card-header';
+                
+                let levelText = '';
+                for (const [variable, level] of Object.entries(sample.levels)) {
+                    if (levelText) levelText += ', ';
+                    levelText += `${variable}: ${level.value || level}`;
+                }
+                
+                cardHeader.innerHTML = `<strong>Sample ${index + 1}</strong> - ${levelText}`;
+                sampleCard.appendChild(cardHeader);
+                
+                // Create the card body with the preview content
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const preElement = document.createElement('pre');
+                preElement.className = 'form-control';
+                preElement.style.maxHeight = '200px';
+                preElement.textContent = sample.content;
+                
+                cardBody.appendChild(preElement);
+                sampleCard.appendChild(cardBody);
+                
+                samplesContainer.appendChild(sampleCard);
+            });
+            
+            // Show the modal
+            const previewModal = new bootstrap.Modal(document.getElementById('previewSamplesModal'));
+            previewModal.show();
+            
+            setStatusMessage('Sample variations generated');
+        } else {
+            throw new Error(response.data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Failed to preview sample variations:', error);
+        setStatusMessage('Error: Failed to preview sample variations');
+        await ipcRenderer.invoke('show-error-dialog', {
+            title: 'Preview Error',
+            message: `Failed to preview sample variations: ${error.response?.data?.error || error.message}`
+        });
+    }
+}
+
 // Calculate and display total possible variations
 async function calculateVariations() {
     try {
@@ -927,4 +1301,341 @@ document.addEventListener('DOMContentLoaded', () => {
     // Results button
     document.getElementById('view-results-folder-btn').addEventListener('click', () => 
         ipcRenderer.invoke('show-output-folder'));
+        
+    // Edit variables functionality
+    if (document.getElementById('edit-variations-btn')) {
+        document.getElementById('edit-variations-btn').addEventListener('click', () => showEditVariablesModal());
+    }
+    
+    if (document.getElementById('save-variable-edits-btn')) {
+        document.getElementById('save-variable-edits-btn').addEventListener('click', () => saveVariableEdits());
+    }
+    
+    if (document.getElementById('add-new-level-btn')) {
+        document.getElementById('add-new-level-btn').addEventListener('click', () => addNewVariableLevel());
+    }
 });
+
+// Show the edit variables modal
+function showEditVariablesModal() {
+    // Check if we have variation data loaded
+    if (!currentSession || 
+        !currentSession.instruction_set ||
+        !currentSession.instruction_set.variation_list_data) {
+        alert('Please load a variation definition first');
+        return;
+    }
+    
+    const variationData = currentSession.instruction_set.variation_list_data;
+    const variables = variationData.variables || [];
+    const levels = variationData.levels || {};
+    
+    // Clear existing accordion content
+    editVariablesAccordion.innerHTML = '';
+    
+    // Populate the accordion with variables and their levels
+    variables.forEach((variable, index) => {
+        const variableLevels = levels[variable] || [];
+        
+        // Create accordion item for each variable
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'accordion-item';
+        
+        // Accordion header
+        const headerId = `heading-${index}`;
+        const collapseId = `collapse-${index}`;
+        
+        accordionItem.innerHTML = `
+            <h2 class="accordion-header" id="${headerId}">
+                <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#${collapseId}" 
+                    aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="${collapseId}">
+                    ${variable} (${variableLevels.length} levels)
+                </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
+                aria-labelledby="${headerId}" data-bs-parent="#editVariablesAccordion">
+                <div class="accordion-body p-0">
+                    <table class="table table-striped table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">ID</th>
+                                <th>Value</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variable-levels-${index}">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        editVariablesAccordion.appendChild(accordionItem);
+        
+        // Add level rows for this variable
+        const tableBody = document.getElementById(`variable-levels-${index}`);
+        variableLevels.forEach((level, levelIndex) => {
+            const row = document.createElement('tr');
+            row.dataset.variable = variable;
+            row.dataset.levelIndex = levelIndex;
+            
+            // ID column
+            const idCell = document.createElement('td');
+            idCell.textContent = level.data || '';
+            row.appendChild(idCell);
+            
+            // Value column with editable input
+            const valueCell = document.createElement('td');
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.className = 'form-control form-control-sm level-value-input';
+            valueInput.value = level.value || '';
+            valueInput.dataset.variable = variable;
+            valueInput.dataset.levelIndex = levelIndex;
+            valueInput.dataset.levelId = level.data || '';
+            valueCell.appendChild(valueInput);
+            row.appendChild(valueCell);
+            
+            // Actions column
+            const actionsCell = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-sm btn-danger';
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            deleteBtn.dataset.variable = variable;
+            deleteBtn.dataset.levelIndex = levelIndex;
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Delete this level from ${variable}?`)) {
+                    deleteVariableLevel(variable, levelIndex);
+                }
+            });
+            actionsCell.appendChild(deleteBtn);
+            row.appendChild(actionsCell);
+            
+            tableBody.appendChild(row);
+        });
+    });
+    
+    // Populate variable dropdown for new level form
+    newLevelVariable.innerHTML = '';
+    variables.forEach(variable => {
+        const option = document.createElement('option');
+        option.value = variable;
+        option.textContent = variable;
+        newLevelVariable.appendChild(option);
+    });
+    
+    // Clear input fields for new level
+    newLevelId.value = '';
+    newLevelValue.value = '';
+    
+    // Show the modal
+    editVariablesModal.show();
+}
+
+// Save all variable edits
+async function saveVariableEdits() {
+    try {
+        if (!currentSession || 
+            !currentSession.instruction_set || 
+            !currentSession.instruction_set.variation_list_data) {
+            return;
+        }
+        
+        const variationData = currentSession.instruction_set.variation_list_data;
+        
+        // Collect all edited values
+        const updatedLevels = {};
+        
+        document.querySelectorAll('.level-value-input').forEach(input => {
+            const variable = input.dataset.variable;
+            const levelIndex = parseInt(input.dataset.levelIndex);
+            const newValue = input.value.trim();
+            
+            if (!updatedLevels[variable]) {
+                updatedLevels[variable] = [];
+            }
+            
+            if (variationData.levels[variable] && 
+                variationData.levels[variable][levelIndex]) {
+                // Only update if value has changed
+                if (variationData.levels[variable][levelIndex].value !== newValue) {
+                    updatedLevels[variable].push({
+                        index: levelIndex,
+                        data: variationData.levels[variable][levelIndex].data,
+                        newValue: newValue
+                    });
+                }
+            }
+        });
+        
+        // Check if we have any changes
+        let hasChanges = false;
+        for (const variable in updatedLevels) {
+            if (updatedLevels[variable].length > 0) {
+                hasChanges = true;
+                break;
+            }
+        }
+        
+        if (!hasChanges) {
+            alert('No changes detected');
+            return;
+        }
+        
+        // Apply the changes
+        for (const variable in updatedLevels) {
+            for (const update of updatedLevels[variable]) {
+                variationData.levels[variable][update.index].value = update.newValue;
+            }
+        }
+        
+        // Update the session
+        currentSession.instruction_set.variation_list_data = variationData;
+        
+        // Save to server
+        setStatusMessage('Saving variable changes...', true);
+        
+        await axios.put(`${API_BASE_URL}/session/update`, {
+            session: currentSession
+        });
+        
+        // Update UI
+        displayVariationListData(variationData);
+        
+        // Close modal
+        editVariablesModal.hide();
+        
+        setStatusMessage('Variable changes saved');
+        
+    } catch (error) {
+        console.error('Failed to save variable edits:', error);
+        alert(`Error saving variable changes: ${error.message}`);
+        setStatusMessage('Error: Failed to save variable changes');
+    }
+}
+
+// Add a new variable level
+async function addNewVariableLevel() {
+    try {
+        if (!currentSession || 
+            !currentSession.instruction_set || 
+            !currentSession.instruction_set.variation_list_data) {
+            return;
+        }
+        
+        const variable = newLevelVariable.value;
+        let levelId = newLevelId.value.trim();
+        const levelValue = newLevelValue.value.trim();
+        
+        // Validate
+        if (!variable) {
+            alert('Please select a variable');
+            return;
+        }
+        
+        if (!levelValue) {
+            alert('Please enter a value for the new level');
+            return;
+        }
+        
+        const variationData = currentSession.instruction_set.variation_list_data;
+        
+        // Auto-assign ID if not provided
+        if (!levelId) {
+            // Find highest existing numeric ID and increment
+            const existingIds = variationData.levels[variable]
+                .map(level => level.data)
+                .filter(id => !isNaN(parseInt(id)));
+            
+            if (existingIds.length > 0) {
+                const highestId = Math.max(...existingIds.map(id => parseInt(id)));
+                levelId = (highestId + 1).toString();
+            } else {
+                levelId = "1";
+            }
+        }
+        
+        // Check for duplicate ID
+        const hasDuplicateId = variationData.levels[variable].some(level => level.data === levelId);
+        if (hasDuplicateId) {
+            alert(`A level with ID "${levelId}" already exists for this variable`);
+            return;
+        }
+        
+        // Add the new level
+        variationData.levels[variable].push({
+            data: levelId,
+            value: levelValue
+        });
+        
+        // Update the session
+        currentSession.instruction_set.variation_list_data = variationData;
+        
+        // Save to server
+        setStatusMessage('Adding new variable level...', true);
+        
+        await axios.put(`${API_BASE_URL}/session/update`, {
+            session: currentSession
+        });
+        
+        // Update UI (refresh the modal)
+        showEditVariablesModal();
+        
+        // Also update the main display
+        displayVariationListData(variationData);
+        
+        setStatusMessage('New variable level added');
+        
+    } catch (error) {
+        console.error('Failed to add variable level:', error);
+        alert(`Error adding variable level: ${error.message}`);
+        setStatusMessage('Error: Failed to add variable level');
+    }
+}
+
+// Delete a variable level
+async function deleteVariableLevel(variable, levelIndex) {
+    try {
+        if (!currentSession || 
+            !currentSession.instruction_set || 
+            !currentSession.instruction_set.variation_list_data) {
+            return;
+        }
+        
+        const variationData = currentSession.instruction_set.variation_list_data;
+        
+        // Don't allow deleting the Default level
+        const levelToDelete = variationData.levels[variable][levelIndex];
+        if (levelToDelete && levelToDelete.data === 'Default') {
+            alert('The Default level cannot be deleted');
+            return;
+        }
+        
+        // Remove the level
+        variationData.levels[variable].splice(levelIndex, 1);
+        
+        // Update the session
+        currentSession.instruction_set.variation_list_data = variationData;
+        
+        // Save to server
+        setStatusMessage('Deleting variable level...', true);
+        
+        await axios.put(`${API_BASE_URL}/session/update`, {
+            session: currentSession
+        });
+        
+        // Update UI (refresh the modal)
+        showEditVariablesModal();
+        
+        // Also update the main display
+        displayVariationListData(variationData);
+        
+        setStatusMessage('Variable level deleted');
+        
+    } catch (error) {
+        console.error('Failed to delete variable level:', error);
+        alert(`Error deleting variable level: ${error.message}`);
+        setStatusMessage('Error: Failed to delete variable level');
+    }
+}
