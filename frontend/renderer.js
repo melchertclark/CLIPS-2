@@ -5,6 +5,30 @@ const axios = require('axios');
 // Backend API URL
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Configure axios defaults
+axios.defaults.headers.common = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
+
+// Add request interceptor for debugging
+axios.interceptors.request.use(request => {
+  console.log('Request:', request.method, request.url);
+  return request;
+}, error => {
+  console.error('Request error:', error);
+  return Promise.reject(error);
+});
+
+// Add response interceptor for debugging
+axios.interceptors.response.use(response => {
+  console.log('Response:', response.status, response.config.url);
+  return response;
+}, error => {
+  console.error('Response error:', error.message, error.response?.status, error.response?.config?.url);
+  return Promise.reject(error);
+});
+
 // Global state
 let currentSession = null;
 let pendingJsonData = null;
@@ -461,20 +485,28 @@ async function loadVariationPDF() {
         
         setStatusMessage('Parsing PDF...', true);
         
+        // Read the file directly using Node.js fs
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = filePaths[0];
+        const fileContent = fs.readFileSync(filePath);
+        const filename = path.basename(filePath);
+        
         // Create FormData for file upload
         const formData = new FormData();
-        const filePath = filePaths[0];
-        
-        // Read file as blob and append to form data
-        const fileBlob = await fetch(`file://${filePath}`).then(r => r.blob());
-        const file = new File([fileBlob], filePath.split(/[\\/]/).pop());
+        const blob = new Blob([fileContent], { type: 'application/pdf' });
+        const file = new File([blob], filename);
         formData.append('file', file);
         
-        // Upload and parse PDF
+        console.log('Uploading file:', filename, 'size:', fileContent.length);
+        
+        // Upload and parse PDF with explicit content type boundary
         const response = await axios.post(`${API_BASE_URL}/parse/pdf`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
-            }
+            },
+            // Increase timeout for large files
+            timeout: 30000
         });
         
         if (response.data.success) {
@@ -513,20 +545,28 @@ async function loadJsonFile(type) {
         
         setStatusMessage(`Parsing ${type} JSON...`, true);
         
+        // Read the file directly using Node.js fs
+        const fs = require('fs');
+        const path = require('path');
+        const filePath = filePaths[0];
+        const fileContent = fs.readFileSync(filePath);
+        const filename = path.basename(filePath);
+        
         // Create FormData for file upload
         const formData = new FormData();
-        const filePath = filePaths[0];
-        
-        // Read file as blob and append to form data
-        const fileBlob = await fetch(`file://${filePath}`).then(r => r.blob());
-        const file = new File([fileBlob], filePath.split(/[\\/]/).pop());
+        const blob = new Blob([fileContent], { type: 'application/json' });
+        const file = new File([blob], filename);
         formData.append('file', file);
+        
+        console.log('Uploading JSON file:', filename, 'size:', fileContent.length);
         
         // Upload and parse JSON
         const response = await axios.post(`${API_BASE_URL}/parse/json`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
-            }
+            },
+            // Increase timeout for large files
+            timeout: 30000
         });
         
         if (response.data.success) {

@@ -3,7 +3,7 @@ import sys
 import json
 import random
 import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import re
 
@@ -19,7 +19,23 @@ from backend.output_generator import OutputGenerator
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+# Enable CORS for all routes with explicit settings
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Add CORS headers to all responses
+@app.after_request
+def add_cors_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+# Add OPTIONS handler for all routes
+@app.route('/', defaults={'path': ''}, methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+def options_handler(path):
+    return Response('', 200)
 
 # Initialize components
 ensure_directories()
@@ -139,12 +155,20 @@ def parse_pdf():
     """Parse a PDF file to extract variation variables and levels"""
     global current_session
     
+    app_logger.info(f"PDF parse request received: {request.method} {request.path}")
+    app_logger.info(f"Request headers: {request.headers}")
+    app_logger.info(f"Request files: {request.files}")
+    
     if 'file' not in request.files:
+        app_logger.warning("No file found in request.files")
         return jsonify({"error": "No file provided"}), 400
     
     pdf_file = request.files['file']
     if pdf_file.filename == '':
         return jsonify({"error": "No file selected"}), 400
+    
+    # Log file details
+    app_logger.info(f"Received file: {pdf_file.filename}, size: {pdf_file.content_length}")
     
     # Save the uploaded file temporarily
     temp_filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
@@ -153,7 +177,9 @@ def parse_pdf():
     
     try:
         pdf_file.save(temp_filepath)
-        logger.log_interaction("upload_pdf", {"filename": pdf_file.filename})
+        file_size = os.path.getsize(temp_filepath)
+        app_logger.info(f"File saved to {temp_filepath}, size: {file_size} bytes")
+        logger.log_interaction("upload_pdf", {"filename": pdf_file.filename, "size": file_size})
         
         # Parse the PDF
         variation_set = pdf_parser.parse_variation_pdf(temp_filepath)
@@ -167,11 +193,12 @@ def parse_pdf():
         # Return the parsed data
         return jsonify({"success": True, "variation_set": variation_set})
     except Exception as e:
-        app_logger.exception("Failed to parse PDF")
+        app_logger.exception(f"Failed to parse PDF: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
         # Clean up the temporary file
         if os.path.exists(temp_filepath):
+            app_logger.info(f"Removing temporary file: {temp_filepath}")
             os.remove(temp_filepath)
 
 @app.route('/api/parse/json', methods=['POST'])
@@ -179,12 +206,20 @@ def parse_json():
     """Parse a JSON file to extract program or club data"""
     global current_session
     
+    app_logger.info(f"JSON parse request received: {request.method} {request.path}")
+    app_logger.info(f"Request headers: {request.headers}")
+    app_logger.info(f"Request files: {request.files}")
+    
     if 'file' not in request.files:
+        app_logger.warning("No file found in request.files")
         return jsonify({"error": "No file provided"}), 400
     
     json_file = request.files['file']
     if json_file.filename == '':
         return jsonify({"error": "No file selected"}), 400
+    
+    # Log file details
+    app_logger.info(f"Received JSON file: {json_file.filename}, size: {json_file.content_length}")
     
     # Save the uploaded file temporarily
     temp_filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
@@ -193,19 +228,25 @@ def parse_json():
     
     try:
         json_file.save(temp_filepath)
-        logger.log_interaction("upload_json", {"filename": json_file.filename})
+        file_size = os.path.getsize(temp_filepath)
+        app_logger.info(f"JSON file saved to {temp_filepath}, size: {file_size} bytes")
+        logger.log_interaction("upload_json", {"filename": json_file.filename, "size": file_size})
         
         # Parse the JSON
         indexed_data = json_parser.parse_json_file(temp_filepath)
+        app_logger.info(f"JSON parsed successfully: {len(indexed_data.get('by_cip_code', {}))} CIP codes found")
         
         # Update session state based on data type
         data_type = indexed_data.get("type", "unknown")
         if data_type == "programs" or "program" in json_file.filename.lower():
             current_session["imported_data"]["programs"] = indexed_data
+            app_logger.info(f"Identified as programs data")
         elif data_type == "clubs" or "club" in json_file.filename.lower():
             current_session["imported_data"]["clubs"] = indexed_data
+            app_logger.info(f"Identified as clubs data")
         else:
             # Ask user which type this is?
+            app_logger.info(f"Unable to determine data type, requesting user selection")
             return jsonify({
                 "success": True, 
                 "indexed_data": indexed_data,
@@ -218,11 +259,12 @@ def parse_json():
         # Return the parsed data
         return jsonify({"success": True, "indexed_data": indexed_data})
     except Exception as e:
-        app_logger.exception("Failed to parse JSON")
+        app_logger.exception(f"Failed to parse JSON: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
         # Clean up the temporary file
         if os.path.exists(temp_filepath):
+            app_logger.info(f"Removing temporary JSON file: {temp_filepath}")
             os.remove(temp_filepath)
 
 @app.route('/api/json/set_type', methods=['POST'])
