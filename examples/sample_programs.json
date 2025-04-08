@@ -1,0 +1,54 @@
+[
+  {
+    "eab_cip_code": "BUS001",
+    "program_name": "Business Administration",
+    "degree_type": "Bachelor of Science",
+    "description": "Our Business Administration program prepares students for leadership roles in today's dynamic business environment. Students develop skills in management, finance, marketing, and entrepreneurship through hands-on projects and internships with industry partners.",
+    "career_paths": ["Management Analyst", "Marketing Manager", "Financial Analyst", "Entrepreneur"],
+    "highlights": [
+      "Accredited by the Association to Advance Collegiate Schools of Business (AACSB)",
+      "92% job placement rate within 6 months of graduation",
+      "Dedicated business innovation lab and incubator space"
+    ],
+    "notable_faculty": "Dr. Sarah Johnson, former CEO of Fortune 500 company"
+  },
+  {
+    "eab_cip_code": "ENG002",
+    "program_name": "Mechanical Engineering",
+    "degree_type": "Bachelor of Science",
+    "description": "Our Mechanical Engineering program combines rigorous technical education with practical design experience. Students learn to apply principles of physics, materials science, and mathematics to design, analyze, and manufacture mechanical systems.",
+    "career_paths": ["Mechanical Engineer", "Product Designer", "Project Manager", "Systems Engineer"],
+    "highlights": [
+      "ABET-accredited program",
+      "State-of-the-art fabrication lab with 3D printing and CNC machines",
+      "Annual participation in national engineering competitions"
+    ],
+    "notable_faculty": "Dr. James Lee, patent holder for 12 mechanical innovations"
+  },
+  {
+    "eab_cip_code": "ART003",
+    "program_name": "Studio Art",
+    "degree_type": "Bachelor of Fine Arts",
+    "description": "Our Studio Art program nurtures creative vision while building technical mastery across multiple mediums. Students develop their artistic voice through intensive studio practice, critical theory, and professional preparation.",
+    "career_paths": ["Professional Artist", "Art Director", "Gallery Manager", "Art Educator"],
+    "highlights": [
+      "Dedicated studio space for each senior student",
+      "Annual juried student exhibitions with cash prizes",
+      "Visiting artist program featuring renowned contemporary artists"
+    ],
+    "notable_faculty": "Professor Maria Garcia, whose work appears in major museum collections"
+  },
+  {
+    "eab_cip_code": "SCI004",
+    "program_name": "Biology",
+    "degree_type": "Bachelor of Science",
+    "description": "Our Biology program explores the complexity and diversity of living systems from molecules to ecosystems. Students gain a strong foundation in biological principles while developing advanced laboratory and research skills.",
+    "career_paths": ["Research Scientist", "Healthcare Professional", "Environmental Consultant", "Biotechnology Specialist"],
+    "highlights": [
+      "Research opportunities beginning freshman year",
+      "Modern laboratories with genomic sequencing capability",
+      "Field research stations in three diverse ecosystems"
+    ],
+    "notable_faculty": "Dr. Michael Chen, recipient of National Science Foundation CAREER Award"
+  }
+]

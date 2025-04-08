@@ -1,0 +1,132 @@
+/* Main layout */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 15px;
+    gap: 15px;
+}
+
+.left-panel, .right-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+/* Status bar */
+.status-bar {
+    background-color: #f1f1f1;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 5px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.status-message {
+    flex-grow: 1;
+}
+
+/* Card styling */
+.card-header {
+    cursor: pointer;
+    background-color: #f8f9fa;
+}
+
+.card-header:hover {
+    background-color: #e9ecef;
+}
+
+/* Draft content */
+.draft-content {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+pre#generated-draft-output {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: white;
+    color: #333;
+    height: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Variation list styling */
+.variation-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.variation-table th,
+.variation-table td {
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+}
+
+.variation-table th {
+    background-color: #f8f9fa;
+}
+
+/* Results summary styling */
+.results-stat {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-number {
+    font-weight: bold;
+}
+
+.missing-data-warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.5rem 1rem;
+    margin-top: 0.5rem;
+}
+
+/* Tooltip styles */
+.tooltip-inner {
+    max-width: 300px;
+}
+
+/* API key alert */
+.api-key-alert {
+    margin: 0;
+    border-radius: 0;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
+
+    .left-panel, .right-panel {
+        width: 100%;
+        max-height: 50vh;
+    }
+}

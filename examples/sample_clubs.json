@@ -1,0 +1,98 @@
+[
+  {
+    "eab_cip_code": "BUS001",
+    "club_name": "Entrepreneurship Club",
+    "description": "The Entrepreneurship Club provides a platform for students to develop their business ideas, connect with mentors, and participate in startup competitions. Members gain hands-on experience pitching ideas and building business plans.",
+    "activities": [
+      "Annual Business Plan Competition with $10,000 in prizes",
+      "Weekly startup workshops and mentor sessions",
+      "Field trips to local startups and incubators"
+    ],
+    "meeting_frequency": "Weekly",
+    "active_members": 75
+  },
+  {
+    "eab_cip_code": "BUS001",
+    "club_name": "Future Business Leaders of America",
+    "description": "FBLA prepares students for careers in business through academic competitions, leadership development, and educational programs. Members build networking skills and professional connections.",
+    "activities": [
+      "State and national leadership conferences",
+      "Community service projects",
+      "Professional development workshops"
+    ],
+    "meeting_frequency": "Bi-weekly",
+    "active_members": 120
+  },
+  {
+    "eab_cip_code": "ENG002",
+    "club_name": "Robotics Team",
+    "description": "The Robotics Team designs, builds, and competes with robots in national competitions. Members apply mechanical engineering, electrical engineering, and programming skills while working in interdisciplinary teams.",
+    "activities": [
+      "Annual participation in the FIRST Robotics Competition",
+      "Robot demonstration events for local schools",
+      "Engineering design workshops"
+    ],
+    "meeting_frequency": "Twice Weekly",
+    "active_members": 35
+  },
+  {
+    "eab_cip_code": "ENG002",
+    "club_name": "Society of Automotive Engineers",
+    "description": "SAE gives students experience designing, building, and testing vehicles for competition. Projects include formula-style race cars, off-road vehicles, and electric vehicles.",
+    "activities": [
+      "Formula SAE competition",
+      "Baja SAE off-road competition",
+      "Engineering professional networking events"
+    ],
+    "meeting_frequency": "Weekly",
+    "active_members": 50
+  },
+  {
+    "eab_cip_code": "ART003",
+    "club_name": "Student Art Collective",
+    "description": "The Student Art Collective organizes art shows, community art projects, and field trips to museums and galleries. Members have opportunities to exhibit their work and build a professional portfolio.",
+    "activities": [
+      "Monthly student art exhibitions",
+      "Community mural projects",
+      "Artist statement and portfolio workshops"
+    ],
+    "meeting_frequency": "Weekly",
+    "active_members": 45
+  },
+  {
+    "eab_cip_code": "ART003",
+    "club_name": "Animation Guild",
+    "description": "The Animation Guild focuses on digital and traditional animation techniques. Members collaborate on short films, share skills, and learn industry-standard animation software.",
+    "activities": [
+      "Annual animated short film festival",
+      "Animation software workshops",
+      "Guest lectures from industry professionals"
+    ],
+    "meeting_frequency": "Bi-weekly",
+    "active_members": 30
+  },
+  {
+    "eab_cip_code": "SCI004",
+    "club_name": "Biology Club",
+    "description": "The Biology Club engages students in field research, laboratory experiences, and conservation projects. Members develop practical skills while building connections within the scientific community.",
+    "activities": [
+      "Local ecosystem monitoring projects",
+      "Bird banding and wildlife tracking",
+      "Scientific paper discussion groups"
+    ],
+    "meeting_frequency": "Weekly",
+    "active_members": 60
+  },
+  {
+    "eab_cip_code": "SCI004",
+    "club_name": "Pre-Health Professionals",
+    "description": "Pre-Health Professionals supports students preparing for careers in healthcare. The club provides information about application processes, standardized tests, and healthcare career options.",
+    "activities": [
+      "MCAT/DAT/GRE study groups",
+      "Hospital volunteer opportunities",
+      "Healthcare professional shadowing program"
+    ],
+    "meeting_frequency": "Weekly",
+    "active_members": 85
+  }
+]

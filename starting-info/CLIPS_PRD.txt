@@ -1,0 +1,158 @@
+
+Product Requirements Document: Copywriter's Lightweight Iteration Pipeline System (CLIPS) - v0.1 (Final)
+
+1. Introduction
+
+1.1 Purpose: This document outlines the requirements for the initial version (v0.1) of the Copywriter's Lightweight Iteration Pipeline System (CLIPS). CLIPS aims to streamline the generation of multiple copy variations for college enrollment marketing materials (e.g., emails, landing pages) by combining user-defined instructions, a base copy template, parsing structured variation definitions (from PDF), importing relevant content data (from JSON), and leveraging AI generation capabilities via the OpenAI API. It features an iterative review cycle with automated feedback interpretation, detailed logging, and session persistence.
+1.2 Scope: This version will focus on:
+Providing a functional UI for inputting instructions, loading variation definitions (PDF), loading structured content data (JSON), and inputting base copy.
+Integrating with the OpenAI API for draft generation, feedback interpretation, and instruction distillation.
+Parsing Variation Definition Documents (PDF).
+Parsing and utilizing structured data from Programs/Clubs JSON files linked via eab_cip_code.
+Iterative review cycle with automated instruction updates based on user feedback.
+Detailed logging.
+Save/Load session state.
+Outputting finalized variations in Markdown format.
+Advanced project management, multi-user collaboration, direct publishing integrations, advanced conflict resolution, and A/B testing frameworks are out of scope for v0.1.
+1.3 Definitions:
+CLIPS: Copywriter's Lightweight Iteration Pipeline System.
+User: The primary user, typically a copywriter creating enrollment marketing content.
+Original Copy: The initial base text template provided by the user, containing Markers.
+Markers: Placeholders in the format {{MARKER_NAME}} indicating specific sections or elements for AI manipulation (e.g., {{LOCATION_DETAIL}}, {{PROGRAM_HIGHLIGHT}}).
+Instruction Set: The collection of user-defined rules, guidelines, parameters, and imported data controlling AI generation. Persists across the session, can be saved/loaded. Includes Instruction Categories and Imported Content Data.
+Instruction Categories: Specific inputs within the Instruction Set:
+Partner Name: Identifies the target institution/context.
+Variation List Data: Structured data parsed from the Variation Definition Document (read-only display).
+Variation Application Instructions: Qualitative user notes on content generation strategy. The original notes are preserved, and an AI-distilled summary is displayed in the editable field (UI-004) for AI prompting.
+Marker Instructions: Defines how the AI should respond when encountering specific {{MARKER_NAME}} instances (e.g., "When you see {{LOCATION_DETAIL}}, provide information relevant to the student's distance from campus based on the current variation level.").
+Tone/Other Prompts: Optional final filter to fine-tune style or specific messaging elements, applied last in the hierarchy.
+Imported Content Data: Data loaded from JSON files (Programs, Clubs) indexed by eab_cip_code, used for dynamic content injection related to the 'Field of Interest' variation.
+Variation Definition Document: Input document (initially PDF) defining variables and levels (e.g., GPA Range, Distance, Field of Interest).
+Variation Set: Structured data parsed from the Variation Definition Document.
+Variation Variable: A dimension for variation (e.g., GPA Range).
+Variation Level: A specific value within a Variable (e.g., "3.88+"). Each level may have associated data.
+Variation Processing: AI interpretation of the Instruction Set applied to Original Copy, incorporating data for a specific combination of Variation Levels and relevant Imported Content Data.
+Generated Draft: A single iteration of copy produced by the AI. The UI (UI-010) allows viewing either a draft using 'Default' variation levels or one using a randomly selected combination of levels.
+Refinement Loop: Iterative cycle: AI generates draft -> User provides feedback -> AI interprets feedback -> System updates Instruction Set -> User triggers regeneration.
+Final Variations: The complete set of copy variations covering the Cartesian product of Variation Levels.
+Markdown Output: The final deliverable format (.md files).
+Logging: Recording user actions, system events, AI interactions, instruction changes.
+AI Model / Service: OpenAI API.
+Session State: Current configuration (Original Copy, Instruction Set including parsed/loaded data) saved/loaded from a file.
+EAB CIP Code: Identifier used to link 'Field of Interest' variation levels to corresponding Programs/Clubs data from imported JSON.
+2. Overall Description
+
+2.1 Product Perspective: Standalone application or web application orchestrating user input, PDF parsing, JSON parsing, OpenAI API interaction, and file system I/O for sessions and Markdown output. Primarily for generating personalized college recruitment materials.
+2.2 User Characteristics: Copywriters familiar with marketing principles, structured variation concepts, and providing feedback to AI. Comfortable with {{Marker}} syntax.
+2.3 Constraints: OpenAI API dependency (availability, cost, performance). Accuracy of PDF/JSON parsing depends on input format consistency. AI interpretation accuracy (feedback, instruction distillation) impacts effectiveness. Local data storage.
+2.4 Assumptions: User provides OpenAI API key. Variation Definition PDF and Content JSON files have reasonably consistent structures. Instruction priority: Partner -> Variation Rules -> Generate -> Markers (using Marker Instructions) -> Relevant Imported Content Data Injection -> Tone/Other Prompts. Adherence to Original Copy structure is a primary implicit instruction.
+3. Specific Requirements
+
+3.1 User Interface (UI) Requirements:
+UI-001: Implement a two-panel interface layout.
+Left Panel ("Instruction Set Panel"):
+UI-002: Display dedicated, clearly labeled sections for each Instruction Category. The "Variation List Data" section should display the parsed structure from the loaded definition document (read-only). Add a section to display loaded JSON filenames/status.
+UI-003: Each editable Instruction Category section (excluding Variation List Data display) must be collapsible and expandable.
+UI-004: When expanded, display editable fields for instructions. For "Variation Application Instructions", display the AI-distilled instructions here, but provide access (e.g., a button/link) to view/edit the original user notes.
+UI-005: Allow direct user editing of instructions (distilled versions where applicable). Changes trigger logging (DATA-001). Automated updates from feedback (FUNC-AUTO-UPDATE-INSTRUCTIONS) should also visibly refresh these fields.
+UI-006: Visually indicate the state (collapsed/expanded) of each section.
+UI-LOAD-VARIATIONS: Provide a button/mechanism (e.g., "Load Variation PDF") for the user to upload the Variation Definition Document. Indicate success or parsing errors.
+UI-LOAD-JSON: Provide button(s)/mechanism (e.g., "Load Programs JSON", "Load Clubs JSON") to upload Programs and Clubs JSON files. Indicate status/filenames.
+Right Panel ("Workflow Panel"):
+UI-007: Display a prominent, collapsible card/section with a text area for inputting/pasting the "Original Copy".
+UI-008: Provide a button ("Generate Initial Draft" or similar) to submit the Original Copy and initiate the first generation pass using the current Instruction Set (likely using 'Default' variation levels for the initial view).
+UI-009: Once submitted, the Original Copy input area should become collapsible or less prominent.
+UI-010: Display the "Generated Draft" in a clear, readable text area. Include controls (e.g., buttons/toggle) to switch the displayed draft between:
+A version generated using 'Default'/'Null' values for all Variation Variables.
+A version generated using a randomly selected combination of Variation Levels.
+UI-012: Provide a text area labeled "Provide Feedback for Improvement:" below/near the Generated Draft for user's natural language feedback.
+UI-013: Provide a button ("Apply Feedback & Regenerate Draft"). This triggers the automated feedback loop (FUNC-INTERPRET-FEEDBACK, FUNC-AUTO-UPDATE-INSTRUCTIONS) followed by regeneration (FUNC-008).
+UI-014: Provide a button ("Generate All Variations") to finalize the process. This button should trigger a confirmation dialog before proceeding.
+UI-015: Display clear status indicators (e.g., "Parsing PDF...", "Waiting for OpenAI...", "Interpreting feedback...", "Generating final variations...", "Complete", "Error: [message]"). Upon completion of batch generation (FUNC-010), update status/display a summary report detailing successes, failures (post-retry), and variations generated despite missing JSON data.
+Application Menu / Global Controls:
+UI-SAVE: Add menu options/buttons: "Save Session", "Save Session As...", "Open Session".
+3.2 Functional Requirements:
+FUNC-PARSE-VARIATIONS: Parse the uploaded Variation Definition Document (PDF). Extract Variation Variables, Variation Levels, and associated data into an internal structured format (the Variation Set). Handle common table structures; report parsing errors clearly.
+FUNC-PARSE-JSON: Parse uploaded Programs/Clubs JSON files. Store data internally, indexed by eab_cip_code. Handle file format errors or missing required fields.
+FUNC-001: Accept and store user input for the Original Copy (part of Session State).
+FUNC-002: Accept, store, and display user input/edits for each category within the Instruction Set (part of Session State).
+FUNC-DISTILL-VARIATION-INSTRUCTIONS: On initial input or update of original Variation Application Instructions notes by the user, use the OpenAI API to distill these into concise, actionable instructions suitable for the AI prompt. Store both the original notes and the distilled version in the Session State. Update the corresponding field in UI-004 with the distilled version. Requires OpenAI API call.
+FUNC-003: Prompt Compilation: Assemble a prompt for the OpenAI API. Combine:
+Original Copy.
+Relevant Instruction Set components (Partner Name, Distilled Variation Application Instructions, Marker Instructions, Tone/Other Prompts). Follow the priority hierarchy. Include strong instructions for adhering to Original Copy structure and handling Markers.
+Data for a specific combination of Variation Levels (relevant for single draft generation, preview, or final variation generation).
+If the variation combination involves a 'Field of Interest' requiring data for CIP code X:
+Attempt to retrieve relevant Programs/Clubs data from Imported Content Data using CIP code X.
+If data is missing: Instruct the AI during prompt assembly to handle this gracefully (e.g., omit the section associated with the relevant {{MARKER}}, use predefined placeholder text like "[Detailed program/club information unavailable]"). Log this occurrence internally (LOG-MISSING-JSON) associating it with the specific variation being generated.
+If data exists: Instruct the AI on how/where to incorporate the retrieved JSON data, potentially guided by specific {{MARKERS}}.
+FUNC-004: AI Interaction (Generation): Send the compiled generation prompt (FUNC-003) to the configured OpenAI model API. Handle API authentication securely.
+FUNC-005: Receive and parse the AI model's response (the Generated Draft).
+FUNC-006: Display the Generated Draft in the UI (UI-010) based on the toggle state (Default vs. Random Variate). Requires generating the appropriate draft via FUNC-003, FUNC-004, FUNC-005.
+FUNC-007: Manual Instruction Update: Reflect user's direct edits made in the Left Panel (UI-005) into the stored Session State. If the original Variation Application Instructions notes are edited via the mechanism linked in UI-004, re-trigger FUNC-DISTILL-VARIATION-INSTRUCTIONS.
+FUNC-INTERPRET-FEEDBACK: When "Apply Feedback & Regenerate Draft" (UI-013) is triggered, take the user feedback text (UI-012), the current draft, and the current Instruction Set. Send these to the OpenAI API with instructions to analyze the feedback and determine which Instruction Set category(ies) (primarily the distilled/actionable parts) should be modified and how. Requires OpenAI API call.
+FUNC-AUTO-UPDATE-INSTRUCTIONS: Apply the modifications identified by FUNC-INTERPRET-FEEDBACK to the corresponding Instruction Set data (e.g., distilled Variation Application Instructions, Marker Instructions, Tone/Prompts). Update the UI (UI-004, UI-005) to reflect these changes. Log the change (DATA-001).
+FUNC-008: Iterative Regeneration: Triggered by UI-013 after feedback is processed (FUNC-INTERPRET-FEEDBACK, FUNC-AUTO-UPDATE-INSTRUCTIONS). Executes FUNC-003, FUNC-004, FUNC-005, FUNC-006 using the latest Instruction Set to refresh the draft display (UI-010).
+FUNC-010: Final Variation Generation: Triggered by "Generate All Variations" (UI-014) after confirmation. Initialize counters for success, failure, missing_data.
+Calculate the Cartesian product of all Variation Levels from the parsed Variation Set.
+For each unique combination in the product:
+Compile the specific prompt (FUNC-003), including the check/handling for missing JSON data.
+Call the OpenAI API (FUNC-004).
+If API call fails:
+Log the initial error (DATA-003).
+Attempt retry once.
+If retry fails:
+Log the final error (DATA-003), including details of the failed variation combination.
+Increment failure counter.
+Skip saving this specific variation (FUNC-011, FUNC-012).
+Continue processing the next variation combination.
+If API call succeeds (initial or retry):
+Collect the successful generation.
+Increment success counter.
+Proceed with FUNC-011 (Markdown Formatting) and FUNC-012 (Output) for this variation.
+If FUNC-003 logged missing JSON data for this variation (LOG-MISSING-JSON), increment the missing_data counter and store identifying details of this variation (e.g., its variation combination or target filename).
+After iterating through all combinations: Trigger FUNC-DISPLAY-SUMMARY.
+FUNC-DISPLAY-SUMMARY: Present a summary report to the user (update UI-015 or use a modal dialog) detailing:
+Total variations attempted.
+Number successfully generated and saved.
+Number that failed after retry (with a suggestion to check logs for details).
+Number generated despite missing JSON data, listing the affected variations/CIP codes if feasible.
+FUNC-011: Markdown Formatting: Ensure each successfully finalized variation generated in FUNC-010 is formatted as valid Markdown text.
+FUNC-012: Output: Save each successfully formatted Markdown variation as a separate .md file to a user-specified or default local directory. Implement a clear file naming convention reflecting the variation combination (e.g., BaseName_Var1Level_Var2Level..._Timestamp.md).
+FUNC-013: Error Handling: Gracefully handle and report errors during file parsing, API calls (following retry logic in FUNC-010), file I/O, etc., via UI-015. Follow missing data handling defined in FUNC-003 and reporting in FUNC-DISPLAY-SUMMARY.
+FUNC-SAVE-STATE: Save the current Session State (Original Copy, full Instruction Set including parsed variation data, loaded JSON data paths/references, original/distilled instructions) to a specified file (e.g., in JSON format).
+FUNC-SAVE-AS-STATE: Allow saving the current Session State to a new file specified by the user.
+FUNC-LOAD-STATE: Load a previously saved Session State file. Populate the Original Copy input, the entire Instruction Set (re-establishing internal data structures, possibly requiring reloading linked JSON files based on stored paths), and refresh the UI display. Handle file not found or format errors.
+3.3 Data Requirements:
+DATA-001: Interaction Logging: Log all significant user interactions with timestamps: File loads (PDF, JSON), Input/update of Original Copy, Input/update/auto-update of each Instruction Set category (distinguishing original vs. distilled where applicable), Feedback submission, Clicks on main action buttons (UI-008, UI-013, UI-014), Save/Load actions.
+DATA-002: Instruction State Logging: Log the complete Session State whenever a regeneration (FUNC-008) or final generation (FUNC-010) is triggered.
+DATA-003: AI Interaction Logging: Log the exact prompt sent to the AI model and the exact response received for every OpenAI API call (FUNC-DISTILL-VARIATION-INSTRUCTIONS, FUNC-004, FUNC-INTERPRET-FEEDBACK, FUNC-010). Include timestamps, model used, any error messages, and retry attempts/outcomes.
+DATA-004: Output Logging: Log the names and locations of the final Markdown files generated. Log details of variations skipped due to persistent API errors during batch generation. Log details of variations generated despite missing JSON data.
+LOG-MISSING-JSON: A specific log entry (or flag associated with DATA-004 entry) created by FUNC-003 when required JSON data is not found for a variation being generated. Must include variation identifiers (e.g., combination of levels) and the missing CIP code.
+DATA-005: Storage: Logs should be stored in a structured format (e.g., JSON lines) in a local file(s) within a designated logs directory. Session state files saved locally (e.g., JSON).
+DATA-006: Configuration: Securely handle the OpenAI API key (e.g., prompt per session, environment variable, or system keychain if feasible on the target platform).
+3.4 Non-Functional Requirements:
+NFR-001: Usability: The interface should be intuitive for the target user. Workflow progression should be logical. Clear distinction between original notes and distilled instructions. Toggle for draft view (UI-010) should be easy to find and use.
+NFR-002: Performance: UI must remain responsive during user input. API call latency is dependent on OpenAI, but the application must handle wait times gracefully with clear status indicators (UI-015). Batch generation (FUNC-010) may take significant time; provide progress indication (e.g., "Generating variation X of Y..."). Parsing times for typical PDF/JSON inputs should be acceptable (few seconds).
+NFR-003: Reliability: The application should handle typical usage without crashing. State (current instructions, original copy) should be reliably saved and loaded. Errors (e.g., API failures after retry, file errors) should be reported clearly, not cause unexpected data loss or application termination.
+NFR-004: Maintainability: Code should be well-structured, commented, and ideally follow standard coding practices to facilitate future development. Clear separation of concerns (UI, parsing logic, AI interaction, state management, file I/O).
+3.5 AI Model Integration:
+AI-001: Use the OpenAI API for all AI-driven tasks (FUNC-DISTILL-VARIATION-INSTRUCTIONS, FUNC-004, FUNC-INTERPRET-FEEDBACK, FUNC-010).
+AI-002: Implement secure API key handling (DATA-006).
+AI-003: Use a suitable default model (e.g., gpt-4o or gpt-4-turbo-preview) for v0.1. Model selection could be a future enhancement.
+AI-004: Prompt Engineering: This is critical. Develop and refine prompts for:
+Generation (FUNC-003): Must clearly incorporate all Instruction Set elements according to hierarchy, handle Markers, use variation data correctly, inject dynamic JSON content appropriately, maintain desired tone, and adhere strongly to the Original Copy's structure.
+Feedback Interpretation (FUNC-INTERPRET-FEEDBACK): Must reliably map user's natural language critiques to specific, actionable modifications within the structured Instruction Set.
+Instruction Distillation (FUNC-DISTILL-VARIATION-INSTRUCTIONS): Must accurately summarize user's qualitative notes into concise instructions suitable for inclusion in the generation prompt.
+4. Open Questions / Clarifications Needed
+
+(None currently identified based on provided information)
+5. Future Considerations (Out of Scope for v0.1)
+
+More robust and flexible parsing options (handling diverse PDF layouts, supporting CSV/JSON/Sheets for variation definitions).
+UI for editing parsed/loaded variation or content data directly.
+User configuration options for AI models, parameters (temperature, etc.).
+Advanced Conflict Resolution Logic: Defining explicit rules or AI-driven mediation for contradictory instructions. (High priority for v0.2).
+A/B Testing Framework Integration: Features to specifically support creating and managing variations intended for A/B tests. (High priority for v0.2).
+Library/database of reusable templates, Instruction Sets, or Markers.
+Direct integration with external platforms (Obsidian Vaults, CMS, CRM, Email Marketing Platforms).
+User accounts, permissions, and collaborative features.

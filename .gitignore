@@ -1,0 +1,38 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node
+node_modules/
+npm-debug.log
+
+# Application data
+logs/*
+sessions/*
+output/*
+!logs/.gitkeep
+!sessions/.gitkeep
+!output/.gitkeep
+
+# Distribution / packaging
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
