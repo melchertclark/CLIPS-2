@@ -1,0 +1,13 @@
+I want it to **just work**. Please integrate lots of debugging information like well-commented code and debugging mode for testing. Please be proactive in identifying potential issues with API integration and provide lots of instructive feedback. This is a learning project and I will depend heavily on good documentation throughout the project including file structures, function uses and limitations, and other details that may be defined during the development process outside of the PRD. Please do not make major changes to the functionality without alerting me first, but keep in mind that I am flexible on the final deliverable because I am oriented towards shipping something relative to this but maybe not exactly this with all its features.
+
+I want to deploy/share this with GitHub.
+
+Take grok_guidance with a grain of salt: that is just one perspective. CLIPS_PRD is the real source of truth.
+
+OpenAI_text_completions_documentation is your 1st reference for setting up text completions. Please let me know if you need anything else to get this stuff right. 
+
+My OpenAI API key is: redacted.
+
+I know that's not meant to be hardcoded, just wanted to share. Maybe you can help me set that up.
+
+I will also need empathetic, beginner friendly guides for testing and deploying this.
