@@ -46,22 +46,29 @@ function createWindow() {
 // Start the Python backend server
 async function startBackend() {
   return new Promise((resolve, reject) => {
-    // Determine the path to the Python script
+    // Get path to the starter script
     const isPackaged = app.isPackaged;
     let scriptPath;
     
     if (isPackaged) {
       // In packaged app, the Python executable is bundled
-      scriptPath = path.join(process.resourcesPath, 'backend', 'main.py');
+      scriptPath = path.join(process.resourcesPath, 'start_backend.py');
     } else {
       // In development, use the script from the project directory
-      scriptPath = path.join(__dirname, '..', 'backend', 'main.py');
+      scriptPath = path.join(__dirname, '..', 'start_backend.py');
     }
 
-    console.log(`Starting backend at ${scriptPath} on port ${backendPort}`);
+    console.log(`Starting backend with ${scriptPath} on port ${backendPort}`);
+    
+    // Make the starter script executable
+    try {
+      fs.chmodSync(scriptPath, 0o755);
+    } catch (err) {
+      console.warn(`Failed to make script executable: ${err.message}`);
+    }
 
     // Try different Python executable names (python3 is common on macOS)
-    const pythonExecutables = ['python3', 'python', 'py'];
+    const pythonExecutables = ['python3', 'python', 'py', './start_backend.py'];
     let executableIndex = 0;
     
     const tryNextExecutable = () => {
@@ -70,12 +77,26 @@ async function startBackend() {
       }
       
       const executable = pythonExecutables[executableIndex];
-      console.log(`Trying Python executable: ${executable}`);
+      console.log(`Trying executable: ${executable}`);
       
-      // Launch the backend process
-      backendProcess = spawn(executable, [scriptPath, backendPort.toString()], {
-        stdio: 'pipe'
-      });
+      // Prepare command arguments based on executable
+      let args = [];
+      if (executable === './start_backend.py') {
+        // Direct execution of the starter script
+        args = [backendPort.toString()];
+        // Launch the backend process with the script directly
+        backendProcess = spawn(executable, args, {
+          stdio: 'pipe',
+          cwd: path.dirname(scriptPath)
+        });
+      } else {
+        // Python interpreter execution
+        args = [scriptPath, backendPort.toString()];
+        // Launch the backend process
+        backendProcess = spawn(executable, args, {
+          stdio: 'pipe'
+        });
+      }
       
       backendProcess.on('error', (err) => {
         console.error(`Failed to start with ${executable}:`, err);
@@ -120,9 +141,17 @@ async function startBackend() {
     setTimeout(() => {
       if (!backendReady) {
         console.error('Backend startup timed out');
-        reject(new Error('Backend startup timed out'));
+        if (backendProcess) {
+          // If process is still running but not sending the expected message,
+          // let's try connecting anyway
+          console.log('Backend process is running but not sending ready signal. Attempting to connect anyway...');
+          backendReady = true;
+          resolve();
+        } else {
+          reject(new Error('Backend startup timed out'));
+        }
       }
-    }, 15000);
+    }, 30000);
   });
 }
 

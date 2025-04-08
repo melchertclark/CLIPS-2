@@ -512,5 +512,10 @@ if __name__ == '__main__':
     # Create temp directory if it doesn't exist
     os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "temp_uploads"), exist_ok=True)
     
+    # Print startup message
+    print(f"Starting CLIPS backend server...")
+    print(f"Creating required directories...")
+    
     # Start the server
+    print(f"Running on http://127.0.0.1:{port}")
     app.run(host='127.0.0.1', port=port, debug=True)
