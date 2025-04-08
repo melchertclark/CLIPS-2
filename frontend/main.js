@@ -60,35 +60,61 @@ async function startBackend() {
 
     console.log(`Starting backend at ${scriptPath} on port ${backendPort}`);
 
-    // Launch the backend process
-    backendProcess = spawn('python', [scriptPath, backendPort.toString()], {
-      stdio: 'pipe'
-    });
-
-    // Handle backend process output
-    backendProcess.stdout.on('data', (data) => {
-      console.log(`Backend stdout: ${data}`);
-
-      // Check if server is running
-      if (data.toString().includes('Running on http://')) {
-        backendReady = true;
-        resolve();
+    // Try different Python executable names (python3 is common on macOS)
+    const pythonExecutables = ['python3', 'python', 'py'];
+    let executableIndex = 0;
+    
+    const tryNextExecutable = () => {
+      if (executableIndex >= pythonExecutables.length) {
+        return reject(new Error('Could not find Python executable. Please ensure Python 3 is installed and in your PATH.'));
       }
-    });
+      
+      const executable = pythonExecutables[executableIndex];
+      console.log(`Trying Python executable: ${executable}`);
+      
+      // Launch the backend process
+      backendProcess = spawn(executable, [scriptPath, backendPort.toString()], {
+        stdio: 'pipe'
+      });
+      
+      backendProcess.on('error', (err) => {
+        console.error(`Failed to start with ${executable}:`, err);
+        executableIndex++;
+        backendProcess = null;
+        tryNextExecutable();
+      });
 
-    backendProcess.stderr.on('data', (data) => {
-      console.error(`Backend stderr: ${data}`);
-    });
+      // Handle backend process output
+      backendProcess.stdout.on('data', (data) => {
+        console.log(`Backend stdout: ${data}`);
 
-    backendProcess.on('error', (err) => {
-      console.error('Failed to start backend process:', err);
-      reject(err);
-    });
+        // Check if server is running
+        if (data.toString().includes('Running on http://')) {
+          backendReady = true;
+          resolve();
+        }
+      });
 
-    backendProcess.on('close', (code) => {
-      console.log(`Backend process exited with code ${code}`);
-      backendProcess = null;
-    });
+      backendProcess.stderr.on('data', (data) => {
+        console.error(`Backend stderr: ${data}`);
+      });
+
+      backendProcess.on('close', (code) => {
+        // If process closed without becoming ready and it's not an error we already handled
+        if (!backendReady && code !== null) {
+          console.log(`Backend process with ${executable} exited with code ${code}`);
+          executableIndex++;
+          backendProcess = null;
+          tryNextExecutable();
+        } else {
+          console.log(`Backend process exited with code ${code}`);
+          backendProcess = null;
+        }
+      });
+    };
+    
+    // Start trying executables
+    tryNextExecutable();
 
     // Set a timeout for startup
     setTimeout(() => {
@@ -96,7 +122,7 @@ async function startBackend() {
         console.error('Backend startup timed out');
         reject(new Error('Backend startup timed out'));
       }
-    }, 10000);
+    }, 15000);
   });
 }
 

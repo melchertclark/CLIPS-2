@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import re
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from .config import get_openai_api_key, DEFAULT_MODEL
