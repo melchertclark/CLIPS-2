@@ -96,6 +96,15 @@
                     </div>
                     <div class="collapse show" id="variation-list-section">
                         <div class="card-body">
+                            <!-- Paste individual variable definitions -->
+                            <div id="paste-variation-section" class="mb-3 collapse show">
+                                <h6><i class="bi bi-clipboard"></i> Paste a Variable Definition</h6>
+                                <textarea id="paste-variation-textarea" class="form-control" rows="8" placeholder="Paste the first line as variable name, subsequent lines as levels"></textarea>
+                                <div class="mt-2">
+                                    <button class="btn btn-outline-primary btn-sm me-2" id="add-paste-btn"><i class="bi bi-plus"></i> Add Variable</button>
+                                    <button class="btn btn-outline-success btn-sm" id="finish-paste-btn"><i class="bi bi-check2-all"></i> Finish</button>
+                                </div>
+                            </div>
                             <div id="variation-list-empty" class="alert alert-info">
                                 <h5><i class="bi bi-info-circle"></i> No Variation Data Loaded</h5>
                                 <p>A variation definition PDF defines the different versions of your content that will be generated.</p>
@@ -464,7 +473,7 @@
                                 <input type="text" class="form-control" id="new-level-id" placeholder="ID/Number">
                             </div>
                             <div class="col-md-4">
-                                <input type="text" class="form-control" id="new-level-value" placeholder="Value">
+                                <textarea class="form-control" id="new-level-value" placeholder="Value" rows="4"></textarea>
                             </div>
                             <div class="col-md-2">
                                 <button class="btn btn-primary" id="add-new-level-btn">Add</button>

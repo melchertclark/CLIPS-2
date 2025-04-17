@@ -1238,6 +1238,128 @@ function displayResultsSummary(results) {
     resultsContent.innerHTML = html;
     resultsSummaryCard.style.display = 'block';
 }
+// Parse pasted variation definitions
+function parsePastedVariations(text) {
+    const variationData = { variables: [], levels: {} };
+    // Split text into blocks separated by blank lines
+    const blocks = text.split(/\r?\n\s*\r?\n/).map(b => b.trim()).filter(b => b);
+    blocks.forEach(block => {
+        const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+        if (lines.length < 2) return;
+        const varName = lines[0];
+        variationData.variables.push(varName);
+        variationData.levels[varName] = [];
+        lines.slice(1).forEach(line => {
+            let data, value;
+            if (line.includes('\t')) {
+                [data, value] = line.split('\t', 2);
+            } else if (line.includes(',')) {
+                [data, value] = line.split(',', 2);
+            } else if (line.includes('|')) {
+                [data, value] = line.split('|', 2);
+            } else {
+                data = line;
+                value = line;
+            }
+            data = data.trim();
+            value = (value || data).trim();
+            variationData.levels[varName].push({ data, value });
+        });
+    });
+    return variationData;
+}
+
+// Handler for parsing pasted variation definitions
+async function handleParsePastedDefinitions() {
+    const textarea = document.getElementById('paste-variation-textarea');
+    const text = textarea ? textarea.value : '';
+    if (!text.trim()) {
+        alert('Please paste variation definitions before parsing.');
+        return;
+    }
+    try {
+        const variationData = parsePastedVariations(text);
+        if (!variationData.variables.length) {
+            alert('No variables parsed. Please check the format.');
+            return;
+        }
+        // Update session data
+        currentSession.instruction_set.variation_list_data = variationData;
+        // Persist to server
+        setStatusMessage('Saving variation definitions...', true);
+        await axios.put(`${API_BASE_URL}/session/update`, { session: currentSession });
+        // Update UI
+        displayVariationListData(variationData);
+        document.getElementById('variation-list-empty').style.display = 'none';
+        document.getElementById('variation-list-content').style.display = 'block';
+        setStatusMessage('Variation definitions loaded from paste');
+    } catch (error) {
+        console.error('Error parsing pasted variations:', error);
+        alert(`Error parsing pasted variations: ${error.message}`);
+        setStatusMessage('Error: Failed to parse pasted variations');
+    }
+}
+// Add a single pasted variable definition
+async function handleAddPastedVariable() {
+    const textarea = document.getElementById('paste-variation-textarea');
+    const text = textarea ? textarea.value.trim() : '';
+    if (!text) {
+        alert('Please paste a variable definition before adding.');
+        return;
+    }
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    if (lines.length < 2) {
+        alert('Please provide a variable name and at least one level.');
+        return;
+    }
+    const varName = lines[0];
+    const levelLines = lines.slice(1);
+    // Ensure variation_list_data has the proper structure
+    let variationData = currentSession.instruction_set.variation_list_data;
+    if (!variationData || !Array.isArray(variationData.variables) || typeof variationData.levels !== 'object') {
+        variationData = { variables: [], levels: {} };
+        currentSession.instruction_set.variation_list_data = variationData;
+    }
+    if (variationData.variables.includes(varName)) {
+        alert(`Variable "${varName}" already added.`);
+        textarea.value = '';
+        return;
+    }
+    variationData.variables.push(varName);
+    variationData.levels[varName] = [];
+    levelLines.forEach((lvl, idx) => {
+        variationData.levels[varName].push({ data: (idx + 1).toString(), value: lvl });
+    });
+    setStatusMessage(`Adding variable "${varName}"...`, true);
+    try {
+        await axios.put(`${API_BASE_URL}/session/update`, { session: currentSession });
+        displayVariationListData(variationData);
+        textarea.value = '';
+        setStatusMessage(`Variable "${varName}" added`);
+    } catch (e) {
+        console.error('Error adding variable via paste:', e);
+        alert(`Error adding variable: ${e.message}`);
+        setStatusMessage('Error: Failed to add variable');
+    }
+}
+
+// Finish pasting variables
+function handleFinishPastedDefinitions() {
+    const section = document.getElementById('paste-variation-section');
+    if (section) {
+        try {
+            // Collapse the paste section using Bootstrap
+            if (window.bootstrap && window.bootstrap.Collapse) {
+                window.bootstrap.Collapse.getOrCreateInstance(section).hide();
+            } else {
+                section.style.display = 'none';
+            }
+        } catch (e) {
+            section.style.display = 'none';
+        }
+    }
+    setStatusMessage('Finished pasting variables');
+}
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -1301,6 +1423,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Results button
     document.getElementById('view-results-folder-btn').addEventListener('click', () => 
         ipcRenderer.invoke('show-output-folder'));
+    // (Deprecated) Parse pasted variation definitions (for multiple blocks)
+    if (document.getElementById('parse-paste-btn')) {
+        document.getElementById('parse-paste-btn').addEventListener('click', () => handleParsePastedDefinitions());
+    }
+    // Add variable via paste
+    if (document.getElementById('add-paste-btn')) {
+        document.getElementById('add-paste-btn').addEventListener('click', () => handleAddPastedVariable());
+    }
+    // Finish pasting variables
+    if (document.getElementById('finish-paste-btn')) {
+        document.getElementById('finish-paste-btn').addEventListener('click', () => handleFinishPastedDefinitions());
+    }
         
     // Edit variables functionality
     if (document.getElementById('edit-variations-btn')) {
@@ -1525,8 +1659,8 @@ async function addNewVariableLevel() {
         }
         
         const variable = newLevelVariable.value;
-        let levelId = newLevelId.value.trim();
-        const levelValue = newLevelValue.value.trim();
+        const rawId = newLevelId.value.trim();
+        const rawValue = newLevelValue.value.trim();
         
         // Validate
         if (!variable) {
@@ -1534,40 +1668,44 @@ async function addNewVariableLevel() {
             return;
         }
         
-        if (!levelValue) {
+        if (!rawValue) {
             alert('Please enter a value for the new level');
             return;
         }
         
         const variationData = currentSession.instruction_set.variation_list_data;
         
-        // Auto-assign ID if not provided
-        if (!levelId) {
-            // Find highest existing numeric ID and increment
-            const existingIds = variationData.levels[variable]
-                .map(level => level.data)
-                .filter(id => !isNaN(parseInt(id)));
-            
-            if (existingIds.length > 0) {
-                const highestId = Math.max(...existingIds.map(id => parseInt(id)));
-                levelId = (highestId + 1).toString();
-            } else {
-                levelId = "1";
+        // Parse values (support bulk paste: newline separated)
+        const values = rawValue.split(/\r?\n/).map(v => v.trim()).filter(v => v);
+
+        // Add each value as a new level (skip duplicates silently)
+        for (const v of values) {
+            // Skip if this value already exists for the variable
+            if (variationData.levels[variable].some(level => level.value === v)) {
+                continue;
             }
+            let levelId;
+            if (values.length === 1 && rawId) {
+                levelId = rawId;
+                // Check for duplicate ID
+                if (variationData.levels[variable].some(level => level.data === levelId)) {
+                    alert(`A level with ID "${levelId}" already exists for this variable`);
+                    return;
+                }
+            } else {
+                // Auto-assign a new numeric ID
+                const existingIds = variationData.levels[variable]
+                    .map(level => level.data)
+                    .filter(id => !isNaN(parseInt(id)))
+                    .map(id => parseInt(id));
+                const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+                levelId = (maxId + 1).toString();
+            }
+            variationData.levels[variable].push({
+                data: levelId,
+                value: v
+            });
         }
-        
-        // Check for duplicate ID
-        const hasDuplicateId = variationData.levels[variable].some(level => level.data === levelId);
-        if (hasDuplicateId) {
-            alert(`A level with ID "${levelId}" already exists for this variable`);
-            return;
-        }
-        
-        // Add the new level
-        variationData.levels[variable].push({
-            data: levelId,
-            value: levelValue
-        });
         
         // Update the session
         currentSession.instruction_set.variation_list_data = variationData;
